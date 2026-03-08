@@ -1,0 +1,13 @@
+export default {
+  async fetch(request, env, ctx) {
+    return new Response(
+      "Bleu.js Quantum-Enhanced AI Platform - Backend Ready",
+      {
+        headers: {
+          "content-type": "text/plain",
+          "Access-Control-Allow-Origin": "*",
+        },
+      },
+    );
+  },
+};
