@@ -1,15 +1,61 @@
 # Bleu.js Backend
 
-Node/Express API and services for Bleu.js. Exported from the main [Bleu.js](https://github.com/HelloblueAI/Bleu.js) repo so the product repo stays focused on the Python SDK and CLI.
+Node/Express API and services for [Bleu.js](https://github.com/HelloblueAI/Bleu.js). This repo contains the backend that powers the Bleu.js cloud API; the main [Bleu.js](https://github.com/HelloblueAI/Bleu.js) repo holds the Python SDK, CLI, and docs.
+
+## What's in this repo
+
+- **API server** — Express app (inference, prediction, rules engine, AI services)
+- **ML inference** — XGBoost model serving and prediction API
+- **Services** — Decision tree, rules engine, Redis, optional MongoDB
+
+## Prerequisites
+
+- **Node.js** >= 20
+- **npm** (or yarn/pnpm)
 
 ## Setup
 
 ```bash
 npm install
-cp .env.example .env  # add keys
+```
+
+Create a `.env` file in the repo root (see [Environment variables](#environment-variables)). For local dev you can use:
+
+```bash
 npm run dev
 ```
 
+(Adjust the `dev` script in `package.json` if your `.env` path differs.)
+
+## Scripts
+
+| Script      | Description                |
+|------------|----------------------------|
+| `npm run dev`     | Run with tsx and dotenv (local) |
+| `npm start`       | Run production build (`node index.js`) |
+| `npm run lint`    | ESLint                    |
+| `npm run format`  | Prettier                   |
+| `npm run typecheck` | TypeScript check        |
+
+## Environment variables
+
+Configure via `.env`. Typical variables (no secrets in the repo):
+
+- `PORT` — Server port
+- `NODE_ENV` — `development` or `production`
+- Database/Redis URLs, API keys, and other secrets as required by the app
+
+Do not commit `.env`. Use a secrets manager or env vars in production.
+
 ## Deploy
 
-Point your deployment (e.g. bleujs.org API) at this repo. See main repo [docs](https://github.com/HelloblueAI/Bleu.js/tree/main/docs) for architecture.
+Point your deployment (e.g. bleujs.org API) at this repo’s `main` branch. Use environment-based config and a process manager (e.g. PM2) or your platform’s Node runtime.
+
+## Main repo
+
+- **Bleu.js (SDK, CLI, docs):** [github.com/HelloblueAI/Bleu.js](https://github.com/HelloblueAI/Bleu.js)
+- **Backend (this repo):** [github.com/HelloblueAI/Bleujs.-backend](https://github.com/HelloblueAI/Bleujs.-backend)
+
+## License
+
+Same as the main Bleu.js project (see [LICENSE](LICENSE) in this repo).
