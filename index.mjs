@@ -5,7 +5,7 @@ export default {
       {
         headers: {
           "content-type": "text/plain",
-          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Origin": "*", // restrict in production (e.g. your front-end origin)
         },
       },
     );

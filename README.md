@@ -19,7 +19,7 @@ Node/Express API and services for [Bleu.js](https://github.com/HelloblueAI/Bleu.
 npm install
 ```
 
-Create a `.env` file in the repo root (see [Environment variables](#environment-variables)). For local dev you can use:
+Copy `.env.example` to `.env` in the repo root and fill in values (see [Environment variables](#environment-variables)). For local dev you can use:
 
 ```bash
 npm run dev
@@ -31,8 +31,8 @@ npm run dev
 
 | Script      | Description                |
 |------------|----------------------------|
-| `npm run dev`     | Run with tsx and dotenv (local) |
-| `npm start`       | Run production build (`node index.js`) |
+| `npm run dev`     | Run with dotenv and node (local) |
+| `npm start`       | Run production (`node index.mjs`) |
 | `npm run lint`    | ESLint                    |
 | `npm run format`  | Prettier                   |
 | `npm run typecheck` | TypeScript check        |
@@ -46,6 +46,11 @@ Configure via `.env`. Typical variables (no secrets in the repo):
 - Database/Redis URLs, API keys, and other secrets as required by the app
 
 Do not commit `.env`. Use a secrets manager or env vars in production.
+
+## Security / production
+
+- **CORS:** The stub in `index.mjs` uses `*` for development. In production, set `Access-Control-Allow-Origin` to your front-end origin(s) only.
+- **Secrets:** Never commit `.env`. Use a secrets manager or platform env vars in production.
 
 ## Deploy
 
