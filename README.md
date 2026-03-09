@@ -51,6 +51,11 @@ Do not commit `.env`. Use a secrets manager or env vars in production.
 
 - **CORS:** The stub in `index.mjs` uses `*` for development. In production, set `Access-Control-Allow-Origin` to your front-end origin(s) only.
 - **Secrets:** Never commit `.env`. Use a secrets manager or platform env vars in production.
+- **Policy:** See [SECURITY.md](SECURITY.md) for reporting vulnerabilities and the production checklist.
+
+## CI
+
+GitHub Actions run on push/PR to `main`: lint and typecheck (see [.github/workflows/ci.yml](.github/workflows/ci.yml)).
 
 ## Deploy
 
