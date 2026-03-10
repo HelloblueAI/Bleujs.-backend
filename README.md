@@ -16,7 +16,7 @@
 - **ML inference** — XGBoost model serving and prediction API
 - **Services** — Decision tree, rules engine, Redis, optional MongoDB
 
-**API contract:** For request/response shapes (e.g. `/api/v1/chat`, `/api/v1/generate`, `/api/v1/embed`), keep in sync with the [Bleu.js API client guide](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/API_CLIENT_GUIDE.md#api-contract-and-response-shapes). **Machine-readable spec:** [openapi.yaml](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/api/openapi.yaml) in the main repo is the single source of truth.
+**API contract:** For request/response shapes (e.g. `/api/v1/chat`, `/api/v1/generate`, `/api/v1/embed`), keep in sync with the [Bleu.js API client guide](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/API_CLIENT_GUIDE.md#api-contract-and-response-shapes) and the [openapi.yaml](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/api/openapi.yaml) spec. When you change the API, follow the main repo [Changing the API runbook](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/CHANGING_THE_API.md) so both repos stay in sync.
 
 ## Prerequisites
 
