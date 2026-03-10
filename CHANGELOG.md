@@ -10,7 +10,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - **CI & quality:** ESLint config (`.eslintrc.cjs`), TypeScript config (`tsconfig.json`) so `npm run lint` and `npm run typecheck` pass in CI.
 - **Docs & community:** `CODE_OF_CONDUCT.md` and `CONTRIBUTING.md` aligned with main Bleu.js project; README badges (Node, Part of Bleu.js, License) and link to [Repositories and sync](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/REPOSITORIES.md).
-- **Scripts:** `npm test` runs typecheck.
+- **Scripts:** `npm test` runs typecheck and smoke test; `npm run test:smoke` runs entrypoint smoke test only.
+- **Smoke test:** `tests/smoke.mjs` verifies the entrypoint responds with 200; run in CI.
+- **README:** Entrypoint/structure section (what `index.mjs` is, where API logic lives); repo name note (Bleujs.-backend); link to OpenAPI spec in main repo.
+- **API contract:** Backend README now links to the machine-readable [openapi.yaml](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/api/openapi.yaml) in the main repo as single source of truth.
 
 ### Changed
 

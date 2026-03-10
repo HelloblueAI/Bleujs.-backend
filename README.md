@@ -4,7 +4,11 @@
 [![Part of Bleu.js](https://img.shields.io/badge/Part%20of-Bleu.js-blue.svg)](https://github.com/HelloblueAI/Bleu.js)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**Part of the [Bleu.js](https://github.com/HelloblueAI/Bleu.js) project.** This repo contains the backend that powers the Bleu.js cloud API; the main repo holds the Python SDK, CLI, docs, and product app. For how both repos fit together and stay in sync, see the main repo: [Repositories and sync](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/REPOSITORIES.md).
+**Part of the [Bleu.js](https://github.com/HelloblueAI/Bleu.js) project.** This repo contains the backend that powers the Bleu.js cloud API; the main repo holds the Python SDK, CLI, docs, and product app. For how both repos fit together and stay in sync, see the main repo: [Repositories and sync](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/REPOSITORIES.md). **Repo name:** This repository is **Bleujs.-backend** (canonical: [github.com/HelloblueAI/Bleujs.-backend](https://github.com/HelloblueAI/Bleujs.-backend)).
+
+### Entrypoint and structure
+
+- **`index.mjs`** is the current entrypoint: a minimal stub that returns a ready response (suitable for Workers or as a placeholder). The API server logic and business rules live in **`src/`** (services, ML, rules engine). For a full HTTP API, extend `index.mjs` to mount an Express app and the routes implemented in `src/`, or add a separate server entry (e.g. `server.mjs`) that you run in production.
 
 ## What's in this repo
 
@@ -12,7 +16,7 @@
 - **ML inference** — XGBoost model serving and prediction API
 - **Services** — Decision tree, rules engine, Redis, optional MongoDB
 
-**API contract:** For request/response shapes (e.g. `/api/v1/chat`, `/api/v1/generate`, `/api/v1/embed`), keep in sync with the [Bleu.js API client guide](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/API_CLIENT_GUIDE.md#api-contract-and-response-shapes).
+**API contract:** For request/response shapes (e.g. `/api/v1/chat`, `/api/v1/generate`, `/api/v1/embed`), keep in sync with the [Bleu.js API client guide](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/API_CLIENT_GUIDE.md#api-contract-and-response-shapes). **Machine-readable spec:** [openapi.yaml](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/api/openapi.yaml) in the main repo is the single source of truth.
 
 ## Prerequisites
 
@@ -42,7 +46,8 @@ npm run dev
 | `npm run lint`    | ESLint                    |
 | `npm run format`  | Prettier                   |
 | `npm run typecheck` | TypeScript check        |
-| `npm test`          | Same as typecheck       |
+| `npm run test:smoke` | Smoke test (entrypoint responds) |
+| `npm test`          | Typecheck + smoke test  |
 
 ## Environment variables
 
