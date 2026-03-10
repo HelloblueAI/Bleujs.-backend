@@ -12,7 +12,7 @@ This repository is part of the **Bleu.js** project. We use the same contribution
 ### Sync checklist (when you change routes or request/response shapes)
 
 1. **Update the contract in the main repo:** Open a PR in [Bleu.js](https://github.com/HelloblueAI/Bleu.js) to update [docs/api/openapi.yaml](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/api/openapi.yaml) and the API contract table (or coordinate with someone who can). The main repo CI validates the spec.
-2. **In this repo:** Implement or adjust routes to match the spec; run `npm run lint` and `npm test` (typecheck + smoke).
+2. **In this repo:** Implement or adjust routes to match the spec; run `npm run lint` and `npm test` (typecheck + smoke + contract).
 3. **CHANGELOG:** Add an entry to this repo’s [CHANGELOG.md](CHANGELOG.md) describing the API change so deployers and SDK maintainers know what changed.
 
 This keeps both repos aligned and speeds up releases. Full runbook: [Changing the API](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/CHANGING_THE_API.md) (main repo).
