@@ -64,6 +64,11 @@ Do not commit `.env`. Use a secrets manager or env vars in production.
 
 GitHub Actions run on push/PR to `main`: lint and typecheck (see [.github/workflows/ci.yml](.github/workflows/ci.yml)).
 
+## Releases
+
+- **Release notes:** [CHANGELOG.md](CHANGELOG.md). For SDK and product releases, see the main repo [CHANGELOG](https://github.com/HelloblueAI/Bleu.js/blob/main/CHANGELOG.md).
+- Version is in `package.json` (`version`). When you change API behavior, update the [API contract](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/API_CLIENT_GUIDE.md#api-contract-and-response-shapes) in the main repo and add an entry here if relevant.
+
 ## Deploy
 
 Point your deployment (e.g. bleujs.org API) at this repo’s `main` branch. Use environment-based config and a process manager (e.g. PM2) or your platform’s Node runtime.
