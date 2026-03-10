@@ -11,8 +11,9 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "test": "npm run typecheck && npm run test:smoke",
-    "test:smoke": "node tests/smoke.mjs"
+    "test": "npm run typecheck && npm run test:smoke && npm run test:contract",
+    "test:smoke": "node tests/smoke.mjs",
+    "test:contract": "node tests/contract.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.511.0",

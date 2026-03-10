@@ -20,7 +20,7 @@
 
 ## Prerequisites
 
-- **Node.js** >= 20
+- **Node.js** >= 20 (see [.nvmrc](.nvmrc); use `nvm use` or `fnm use` if you use a version manager).
 - **npm** (or yarn/pnpm)
 
 ## Setup
@@ -47,7 +47,8 @@ npm run dev
 | `npm run format`  | Prettier                   |
 | `npm run typecheck` | TypeScript check        |
 | `npm run test:smoke` | Smoke test (entrypoint responds) |
-| `npm test`          | Typecheck + smoke test  |
+| `npm run test:contract` | Checks main repo OpenAPI spec has expected paths (network) |
+| `npm test`          | Typecheck + smoke + contract  |
 
 ## Environment variables
 
