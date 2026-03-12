@@ -4,6 +4,27 @@ All notable changes to the Bleu.js backend are documented here. The backend is p
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0] - 2026-03
+
+### Added
+
+- **Local server:** `server.mjs` runs an HTTP server (default port 4003) that invokes the Worker fetch handler so `npm run dev` / `npm start` serve the API locally. Fixes chat/generate/embed timeouts or "no response" when testing with the CLI or SDK against a local backend.
+- **API tests:** `tests/api.mjs` and `npm run test:api` verify POST /api/v1/chat, /api/v1/generate, and /api/v1/embed return HTTP 200 and response shapes expected by the CLI/SDK (`choices[0].message.content`, `text`, `data` with embeddings). `npm test` now includes test:api.
+
+### Changed
+
+- **Scripts:** `npm run dev` and `npm start` now run `node server.mjs` instead of `node index.mjs` so the API is actually served when running locally.
+- **README:** Entrypoint section updated to describe index.mjs (Worker handler) and server.mjs (local HTTP server); scripts table updated for dev/start.
+
+### Fixed
+
+- **Chat:** Handler returns promptly with valid JSON (`choices[0].message.content`); no timeout when using the local server.
+- **Generate:** Defensive body parsing and response shape so POST /api/v1/generate returns 200 with `text` (avoids 500 from malformed or non-object body).
+- **Embed:** Defensive parsing for `input` / `inputs` / `texts` and safe array handling so POST /api/v1/embed returns 200 with `data` array of embeddings (avoids 500).
+- **parseJson:** Returns a plain object `{}` on invalid or non-object body instead of `null`, so route handlers never dereference null and throw.
+
+---
+
 ## [1.1.3] - 2026-03
 
 ### Added

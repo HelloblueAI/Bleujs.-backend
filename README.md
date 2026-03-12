@@ -8,7 +8,8 @@
 
 ### Entrypoint and structure
 
-- **`index.mjs`** is the current entrypoint: a minimal stub that returns a ready response (suitable for Workers or as a placeholder). The API server logic and business rules live in **`src/`** (services, ML, rules engine). For a full HTTP API, extend `index.mjs` to mount an Express app and the routes implemented in `src/`, or add a separate server entry (e.g. `server.mjs`) that you run in production.
+- **`index.mjs`** exports a fetch handler (Cloudflare Worker style) that implements `/health`, `/api/v1/models`, `/api/v1/chat`, `/api/v1/generate`, and `/api/v1/embed` so that `bleu chat`, `bleu generate`, and `bleu embed` (and the Python SDK) get HTTP 200 and valid JSON. Deploy this handler to your Worker host (e.g. Cloudflare Workers).
+- **`server.mjs`** runs a local HTTP server (default port 4003) that invokes the handler so `npm run dev` / `npm start` serve the API locally and avoid timeouts or 500s when testing with the CLI or SDK.
 
 ## What's in this repo
 
@@ -41,8 +42,8 @@ npm run dev
 
 | Script      | Description                |
 |------------|----------------------------|
-| `npm run dev`     | Run with dotenv and node (local) |
-| `npm start`       | Run production (`node index.mjs`) |
+| `npm run dev`     | Run local server with dotenv (`node server.mjs`) |
+| `npm start`       | Run local server (`node server.mjs`); set `PORT` to override 4003 |
 | `npm run lint`    | ESLint                    |
 | `npm run format`  | Prettier                   |
 | `npm run typecheck` | TypeScript check        |
