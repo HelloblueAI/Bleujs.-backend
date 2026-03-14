@@ -28,3 +28,17 @@ jobs:
           cache: "npm"
       - run: npm ci
       - run: npm test
+
+  # Ensure ML scripts and HF download path work (public repo, no token needed)
+  ml-scripts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-hf.txt
+      - run: python scripts/download_model_from_hf.py
+        env:
+          HF_REPO_ID: pejmantheory/bleu-xgboost-classifier
+      - run: test -f models/xgboost_model_latest.pkl && echo "Model present"
