@@ -5,3 +5,13 @@ node_modules/
 *.log
 .DS_Store
 dist/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Generated / trained artifacts
+data/
+models/
+*.pkl

@@ -1,0 +1,4 @@
+# Optional: install with pip install -r requirements-hf.txt
+# Enables downloading the XGBoost model from Hugging Face at runtime.
+-r requirements.txt
+huggingface-hub>=0.20.0

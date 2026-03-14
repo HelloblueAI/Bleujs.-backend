@@ -14,8 +14,15 @@
 ## What's in this repo
 
 - **API server** — Express app (inference, prediction, rules engine, AI services)
-- **ML inference** — XGBoost model serving and prediction API
+- **ML inference** — XGBoost model serving and prediction API (XGBoost 3.x, aligned with [Bleu.js](https://github.com/HelloblueAI/Bleu.js))
 - **Services** — Decision tree, rules engine, Redis, optional MongoDB
+
+### ML / XGBoost and Hugging Face
+
+- **XGBoost** is pinned to `>=3.0.2` in `requirements.txt` to match the main Bleu.js repo.
+- Prediction services look for the model at `models/xgboost_model_latest.pkl` (or set `MODEL_PATH` / `MODEL_DIR`).
+- To pull the published model from Hugging Face: `pip install -r requirements-hf.txt`, then `python scripts/download_model_from_hf.py` (set `HF_TOKEN` if the repo is gated).
+- Pre-trained model: [helloblueai/bleu-xgboost-classifier](https://huggingface.co/helloblueai/bleu-xgboost-classifier). See [README_HF.md](README_HF.md) for usage.
 
 **API contract:** For request/response shapes (e.g. `/api/v1/chat`, `/api/v1/generate`, `/api/v1/embed`), keep in sync with the [Bleu.js API client guide](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/API_CLIENT_GUIDE.md#api-contract-and-response-shapes) and the [openapi.yaml](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/api/openapi.yaml) spec. When you change the API, follow the main repo [Changing the API runbook](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/CHANGING_THE_API.md) so both repos stay in sync.
 

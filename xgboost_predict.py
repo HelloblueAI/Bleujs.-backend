@@ -38,23 +38,43 @@ logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
 
-# Load the model safely with absolute path
+# Load the model safely with absolute path; prefer env for deployment flexibility
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "xgboost_model.pkl")
+MODEL_DIR = os.environ.get("MODEL_DIR", os.path.join(BASE_DIR, "models"))
+MODEL_PATH = os.environ.get(
+    "MODEL_PATH",
+    os.path.join(MODEL_DIR, "xgboost_model_latest.pkl"),
+)
+# Fallback paths for backward compatibility
+FALLBACK_PATHS = [
+    MODEL_PATH,
+    os.path.join(BASE_DIR, "xgboost_model.pkl"),
+    os.path.join(MODEL_DIR, "xgboost_model.pkl"),
+]
 
 
 def load_model() -> Optional[xgb.XGBClassifier]:
-    """Load the trained XGBoost model."""
-    try:
-        model_path = os.path.join(
-            os.path.dirname(__file__), "models", "xgboost_model.json"
-        )
-        model = xgb.XGBClassifier()
-        model.load_model(model_path)
-        return model
-    except Exception as e:
-        logging.error(f"❌ Failed to load model: {str(e)}")
-        return None
+    """Load the trained XGBoost model from .pkl (joblib) or .json (native xgb)."""
+    import joblib
+
+    for path in FALLBACK_PATHS:
+        if not os.path.exists(path):
+            continue
+        try:
+            if path.endswith(".json"):
+                model = xgb.XGBClassifier()
+                model.load_model(path)
+                logging.info(f"✅ Loaded XGBoost model from {path} (native)")
+                return model
+            # .pkl or any other: assume joblib/pickle
+            model = joblib.load(path)
+            logging.info(f"✅ Loaded XGBoost model from {path} (pkl)")
+            return model
+        except Exception as e:
+            logging.warning(f"⚠️ Failed to load from {path}: {e}")
+            continue
+    logging.error("❌ No model file found. Tried: " + ", ".join(FALLBACK_PATHS))
+    return None
 
 
 # Load the model globally
@@ -63,7 +83,11 @@ model = load_model()
 if model is None:
     print(
         json.dumps(
-            {"error": "❌ Model loading failed. Ensure 'xgboost_model.pkl' exists."}
+            {
+                "error": "❌ Model loading failed. Place a model at one of: "
+                + ", ".join(FALLBACK_PATHS)
+                + " or set MODEL_PATH / MODEL_DIR."
+            }
         )
     )
     sys.exit(1)

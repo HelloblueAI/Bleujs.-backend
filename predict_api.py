@@ -15,19 +15,30 @@ logging.basicConfig(
 # Initialize FastAPI app
 app = FastAPI(title="Bleu.js AI Prediction API", version="1.0")
 
-# Load the model safely
+# Load the model safely; align with xgboost_predict.py paths (XGBoost 3.x)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "xgboost_model.pkl")
+MODEL_DIR = os.environ.get("MODEL_DIR", os.path.join(BASE_DIR, "models"))
+_MODEL_PATHS = [
+    os.environ.get("MODEL_PATH", os.path.join(MODEL_DIR, "xgboost_model_latest.pkl")),
+    os.path.join(BASE_DIR, "xgboost_model.pkl"),
+    os.path.join(MODEL_DIR, "xgboost_model.pkl"),
+]
+MODEL_PATH = next((p for p in _MODEL_PATHS if os.path.exists(p)), _MODEL_PATHS[0])
 
 if not os.path.exists(MODEL_PATH):
-    logging.error("❌ Model file not found!")
-    raise FileNotFoundError("❌ Model file not found!")
+    logging.error(
+        "❌ Model file not found. Place one at models/xgboost_model_latest.pkl or run: "
+        "python scripts/download_model_from_hf.py"
+    )
+    raise FileNotFoundError(
+        f"❌ Model file not found. Tried: {', '.join(_MODEL_PATHS)}"
+    )
 
 try:
     model = joblib.load(MODEL_PATH)
     expected_features = model.get_booster().num_features()
     logging.info(
-        f"✅ Model loaded successfully! " f"Expected features: {expected_features}"
+        f"✅ Model loaded from {MODEL_PATH} (expected features: {expected_features})"
     )
 except Exception as e:
     logging.error(f"❌ Failed to load model: {str(e)}")

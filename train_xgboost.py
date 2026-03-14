@@ -41,13 +41,12 @@ def train_xgboost(
         features, labels, test_size=0.2, random_state=42
     )
 
-    # Train model
-    model = XGBClassifier(**params)
+    # Train model (XGBoost 3.x: early_stopping_rounds in constructor)
+    model = XGBClassifier(**params, early_stopping_rounds=10)
     model.fit(
         X_train,
         y_train,
         eval_set=[(X_val, y_val)],
-        early_stopping_rounds=10,
         verbose=False,
     )
 
@@ -70,12 +69,16 @@ def main() -> None:
     }
     model = train_xgboost(features, labels, params)
 
-    # Save model
+    # Save model (pkl for HF/backend compatibility; optional .json for native xgb)
     os.makedirs("models", exist_ok=True)
-    with open("models/xgboost.pkl", "wb") as f:
+    pkl_path = os.path.join("models", "xgboost_model_latest.pkl")
+    with open(pkl_path, "wb") as f:
+        pickle.dump(model, f)
+    with open(os.path.join("models", "xgboost.pkl"), "wb") as f:
         pickle.dump(model, f)
 
     print("✅ XGBoost model trained and saved successfully!")
+    print(f"   → {pkl_path} (use this for Hugging Face upload)")
 
 
 if __name__ == "__main__":
