@@ -1,14 +1,14 @@
-# Use a smaller Python base image for efficiency
-FROM python:3.11-slim
-
-
+# Use Bookworm slim for newer, security-patched system packages (libexpat, sqlite, etc.)
+# Pin digest for reproducible builds and Trivy scanning
+FROM python:3.11-slim-bookworm@sha256:420310dd2ff7895895f0f1f9d15cae5a95dabceb8f1d6b9a23ef33c2c1c542c3
 
 # Set working directory
 WORKDIR /app
 
-# Create non-root user, install dependencies, and set up permissions
+# Create non-root user, install deps, apply security upgrades, then clean
 RUN useradd -m bleujs && \
     apt-get update && \
+    apt-get upgrade -y --no-install-recommends && \
     apt-get install -y --no-install-recommends \
     build-essential && \
     apt-get clean && \
@@ -42,12 +42,11 @@ ENV PYTHONUNBUFFERED=1 \
 # *.pem
 # node_modules/
 
-# Copy only necessary files
+# Copy only necessary files (predict_api does not use src/ or config/)
 COPY requirements.txt ./
 COPY xgboost_predict.py ./
-COPY src/*.py ./src/
-COPY models/*.joblib ./models/
-COPY config/*.yaml ./config/
+COPY predict_api.py ./
+COPY models/ ./models/
 
 # Install dependencies and set permissions in a single layer
 RUN pip install --no-cache-dir --upgrade pip==23.3.1 && \
@@ -57,5 +56,6 @@ RUN pip install --no-cache-dir --upgrade pip==23.3.1 && \
 # Switch to non-root user
 USER bleujs
 
-# Default command to run the XGBoost predictor
-CMD ["python3", "xgboost_predict.py"]
+# Run the FastAPI server so Railway gets a process listening on PORT.
+# JSON form with sh -c so $PORT is expanded at runtime (Railway sets PORT).
+CMD ["sh", "-c", "uvicorn predict_api:app --host 0.0.0.0 --port ${PORT:-8000}"]

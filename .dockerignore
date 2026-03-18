@@ -1,0 +1,49 @@
+# Git and IDE
+.git
+.gitignore
+.idea/
+.vscode/
+*.md
+LICENSE
+SECURITY.md
+CODE_OF_CONDUCT.md
+CONTRIBUTING.md
+CHANGELOG.md
+
+# Node (not needed for Python API image)
+node_modules/
+npm-debug.log
+.npmrc
+package*.json
+*.mjs
+*.ts
+tsconfig.json
+.eslintrc*
+.prettier*
+
+# Python dev
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.coverage
+*.log
+logs/
+
+# Data and artifacts not needed in API image (keep models/ for COPY)
+data/
+.cache/
+
+# Env and secrets
+.env
+.env.*
+!.env.example
+secrets/
+credentials/
+*.key
+*.pem
+
+# Misc
+.DS_Store
+.elasticbeanstalk
+docker-compose.yml
