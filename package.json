@@ -11,10 +11,15 @@
     "format": "prettier --write .",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "test": "npm run typecheck && npm run test:smoke && npm run test:api && npm run test:contract",
+    "test": "npm run typecheck && npm run test:smoke && npm run test:api && npm run test:contract && npm run test:unit",
     "test:smoke": "node tests/smoke.mjs",
     "test:api": "node tests/api.mjs",
-    "test:contract": "node tests/contract.mjs"
+    "test:contract": "node tests/contract.mjs",
+    "test:unit": "node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit.test.mjs",
+    "test:unit:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit.test.mjs --watch",
+    "test:unit:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js tests/unit.test.mjs --coverage",
+    "benchmark": "node tests/benchmark.mjs",
+    "benchmark:prod": "node tests/benchmark.mjs --url https://api.bleujs.org"
   },
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.511.0",

@@ -1,0 +1,83 @@
+# Dependabot configuration for automated dependency updates
+# Keeps npm and pip dependencies up-to-date with security patches
+
+version: 2
+updates:
+  # Node.js dependencies (npm)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "npm"
+    reviewers:
+      - "HelloblueAI/backend-team"
+    commit-message:
+      prefix: "chore(deps)"
+      prefix-development: "chore(deps-dev)"
+    # Group updates to reduce PR noise
+    groups:
+      development-dependencies:
+        dependency-type: "development"
+        update-types:
+          - "minor"
+          - "patch"
+      production-dependencies:
+        dependency-type: "production"
+        update-types:
+          - "patch"
+
+  # Python dependencies (pip)
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "python"
+    reviewers:
+      - "HelloblueAI/backend-team"
+    commit-message:
+      prefix: "chore(deps)"
+    # Group updates to reduce PR noise
+    groups:
+      ml-dependencies:
+        patterns:
+          - "xgboost*"
+          - "scikit-learn*"
+          - "pandas*"
+          - "numpy*"
+        update-types:
+          - "minor"
+          - "patch"
+      api-dependencies:
+        patterns:
+          - "fastapi*"
+          - "uvicorn*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "UTC"
+    open-pull-requests-limit: 3
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(ci)"
