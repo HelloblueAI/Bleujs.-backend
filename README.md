@@ -99,6 +99,12 @@ Contributions are welcome. We follow the same community standards as the main pr
 
 Open issues and PRs **in this repo** for backend-specific changes. For SDK, CLI, or docs, use the [main repo](https://github.com/HelloblueAI/Bleu.js).
 
+## Repository Health
+
+For a comprehensive overview of this repository's health, CI/CD status, security posture, and recommendations, see:
+
+- **[Repository Health Report](REPOSITORY_HEALTH_REPORT.md)** - Overall score: **91.5/100 (A)**
+
 ## Main repo
 
 - **Bleu.js (SDK, CLI, docs):** [github.com/HelloblueAI/Bleu.js](https://github.com/HelloblueAI/Bleu.js)
