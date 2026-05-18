@@ -30,7 +30,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
           # For JavaScript/TypeScript, include queries for common vulnerabilities
@@ -67,7 +67,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: "/language:${{ matrix.language }}"
           upload: true
@@ -75,7 +75,7 @@ jobs:
           output: sarif-results
           
       - name: Upload SARIF results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: sarif-results/${{ matrix.language }}.sarif
