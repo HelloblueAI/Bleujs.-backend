@@ -23,7 +23,7 @@ import traceback
 import warnings
 from datetime import datetime
 from functools import lru_cache
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union, cast
 
 import joblib
 import numpy as np
@@ -61,7 +61,7 @@ SCALER_PATH = os.environ.get(
 
 # Create a lock for thread-safe model loading
 MODEL_LOCK = threading.Lock()
-MODEL_CACHE = {
+MODEL_CACHE: Dict[str, Any] = {
     "model": None,
     "scaler": None,
     "feature_count": None,
@@ -332,8 +332,9 @@ def _get_prediction_with_probabilities(
     processed_features: np.ndarray,
 ) -> Dict[str, Any]:
     """Get prediction with probabilities if available."""
+    prediction = MODEL_CACHE["model"].predict(processed_features)
+
     try:
-        prediction = MODEL_CACHE["model"].predict(processed_features)
         prediction_prob = MODEL_CACHE["model"].predict_proba(processed_features)
 
         class_probs = prediction_prob[0].tolist()
@@ -360,7 +361,7 @@ def _run_prediction_with_timeout(
     processed_features: np.ndarray, timeout: float
 ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
     """Run prediction in a separate thread with timeout."""
-    prediction_result = {}
+    prediction_result: Dict[str, Any] = {}
     prediction_error = None
 
     def run_prediction():
@@ -398,7 +399,7 @@ def predict(
         Dictionary with prediction results or error information
     """
     start_time = time.time()
-    result = {}
+    result: Dict[str, Any] = {}
 
     # Include basic diagnostics if requested
     if return_diagnostics:
@@ -420,6 +421,8 @@ def predict(
         processed_features, error = preprocess_features(features)
         if error:
             return {"error": error}
+        if processed_features is None:
+            return {"error": "Feature preprocessing failed"}
 
         # Make prediction with timeout
         prediction_result, prediction_error = _run_prediction_with_timeout(
@@ -428,6 +431,8 @@ def predict(
 
         if prediction_error:
             return {"error": f"Prediction error: {prediction_error}"}
+        if prediction_result is None:
+            return {"error": "Prediction produced no result"}
 
         # Update prediction statistics
         with MODEL_LOCK:
@@ -436,7 +441,7 @@ def predict(
 
         # Add timing information and return results
         processing_time = time.time() - start_time
-        result.update(prediction_result)
+        result.update(cast(Dict[str, Any], prediction_result))
 
         if return_diagnostics:
             result["diagnostics"]["processing_time_ms"] = round(
@@ -576,7 +581,7 @@ def _handle_prediction_request() -> None:
     print(json.dumps(result, indent=2))
 
 
-def main():
+def main() -> None:
     """Main function when the script is invoked directly."""
     # Pre-load the model
     _initialize_model()
