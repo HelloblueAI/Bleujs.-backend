@@ -44,7 +44,14 @@ const server = createServer(async (req, res) => {
   } catch (err) {
     console.error("server:", err);
     res.writeHead(500, { "Content-Type": "application/json" });
-    res.end(JSON.stringify({ success: false, error: String(err?.message || err), code: "INTERNAL_ERROR" }));
+    // Avoid exposing internal exception details to clients.
+    res.end(
+      JSON.stringify({
+        success: false,
+        error: "Internal server error",
+        code: "INTERNAL_ERROR",
+      }),
+    );
   }
 });
 

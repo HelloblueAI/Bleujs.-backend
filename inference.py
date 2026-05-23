@@ -107,7 +107,7 @@ def get_model_metadata() -> Dict[str, Any]:
             if timestamp_part.isdigit() and len(timestamp_part) == 8:  # YYYYMMDD format
                 metadata["model_date"] = timestamp_part
     except Exception:
-        pass
+        logger.debug("Could not derive model_date from model filename", exc_info=True)
 
     return metadata
 
@@ -257,13 +257,13 @@ def preprocess_features(
                     f"got {features_array.shape[0]}",
                 )
 
-        # Apply scaling if available
-        scaled_features = features_array
+        # Apply scaling if available.
+        # Keep a single assignment path for static analysis friendliness.
         if MODEL_CACHE["scaler"] is not None:
             try:
                 # Reshape for scaler
                 reshaped = features_array.reshape(1, -1)
-                scaled_features = MODEL_CACHE["scaler"].transform(reshaped)
+                processed_features = MODEL_CACHE["scaler"].transform(reshaped)
                 logger.debug("✅ Features scaled successfully")
             except Exception as e:
                 logger.warning(
@@ -271,12 +271,12 @@ def preprocess_features(
                     f"proceeding with unscaled features"
                 )
                 # Continue with unscaled features rather than failing
-                scaled_features = features_array.reshape(1, -1)
+                processed_features = features_array.reshape(1, -1)
         else:
             # Reshape for model input
-            scaled_features = features_array.reshape(1, -1)
+            processed_features = features_array.reshape(1, -1)
 
-        return scaled_features, None
+        return processed_features, None
 
     except Exception as e:
         logger.error(f"❌ Feature preprocessing error: {str(e)}")
