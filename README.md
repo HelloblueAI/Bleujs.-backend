@@ -15,7 +15,7 @@
 
 - **API handler** — Worker-style `fetch` handler plus the local `server.mjs` adapter for development
 - **ML inference** — XGBoost model serving and prediction API (XGBoost 3.x, aligned with [Bleu.js](https://github.com/HelloblueAI/Bleu.js))
-- **Experimental services** — Decision tree, rules engine, Redis, and optional MongoDB helpers are present but not wired into the live handler
+- **Experimental services** — Rules engine, Redis, and optional MongoDB helpers are present but not wired into the live handler
 
 ### ML / XGBoost and Hugging Face
 

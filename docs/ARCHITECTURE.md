@@ -53,7 +53,6 @@ graph TB
     subgraph "Service Layer"
         AI[AI Service<br/>aiService.mjs]
         RULES[Rules Engine<br/>rulesEngine.mjs]
-        DT[Decision Tree<br/>decisionTreeService.mjs]
         MODEL[Model Manager<br/>modelManager.mjs]
     end
 
@@ -123,7 +122,6 @@ graph LR
     subgraph "Core Services"
         AISVC[aiService.mjs]
         RULE[rulesEngine.mjs]
-        DTSVC[decisionTreeService.mjs]
         MOCK[mockEngine.mjs]
     end
 
@@ -457,19 +455,6 @@ graph LR
 - `evaluateRules(context)` - Evaluate all applicable rules
 - `applyRule(rule, context)` - Apply single rule
 - `cacheResult(key, value)` - Cache rule evaluation
-
-### Decision Tree Service (`src/services/decisionTreeService.mjs`)
-
-**Responsibilities:**
-- Build and traverse decision trees
-- Feature extraction
-- Path optimization
-- Tree pruning
-
-**Key Methods:**
-- `buildTree(data)` - Construct decision tree
-- `traverse(tree, features)` - Navigate tree
-- `predict(features)` - Get prediction from tree
 
 ### Model Manager (`src/ml/modelManager.mjs`)
 
