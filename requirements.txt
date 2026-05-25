@@ -9,4 +9,4 @@ scikit-learn>=0.24.2
 seaborn>=0.13.2
 uvicorn
 # Align with Bleu.js main repo (pyproject.toml)
-xgboost>=3.0.2
+xgboost>=3.2.0
