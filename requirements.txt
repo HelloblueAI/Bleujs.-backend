@@ -1,5 +1,5 @@
 fastapi
-joblib>=1.0.0
+joblib>=1.5.3
 matplotlib>=3.10.9
 mlflow>=1.20.0
 numpy>=2.4.5
