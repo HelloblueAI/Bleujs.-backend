@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 - Restricted model/scaler pickle loading to trusted model directories.
 - Redacted internal error details from API `500` responses.
+- Upgraded vulnerable npm dependency chains for `bcrypt` and `natural`.
 - Reduced CI token permissions and added Docker base-image Dependabot coverage.
 
 ## [1.2.0] - 2026-03
