@@ -7,7 +7,6 @@
  *   node tests/benchmark.mjs [--url http://localhost:4003] [--requests 1000]
  */
 
-import http from 'http';
 import { performance } from 'perf_hooks';
 
 // Parse CLI args
