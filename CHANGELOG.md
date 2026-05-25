@@ -4,6 +4,26 @@ All notable changes to the Bleu.js backend are documented here. The backend is p
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## Unreleased
+
+### Added
+
+- Optional API-key enforcement for `/api/*` routes via `BLEU_API_KEY` or comma-separated `BLEU_API_KEYS`.
+- Request and embedding safety limits configurable with `MAX_REQUEST_BODY_BYTES`, `MAX_JSON_BODY_BYTES`, `MAX_EMBED_INPUTS`, and `MAX_EMBED_TEXT_CHARS`.
+
+### Changed
+
+- Invalid JSON request bodies now return `400 INVALID_JSON` instead of being silently treated as `{}`.
+- Oversized local HTTP request bodies now return `413 REQUEST_TOO_LARGE`.
+- Python prediction API now applies `SCALER_PATH` when present and returns `422` for feature-count or non-finite input errors.
+
+### Security
+
+- Restricted model/scaler pickle loading to trusted model directories.
+- Redacted internal error details from API `500` responses.
+- Upgraded vulnerable npm dependency chains for `bcrypt` and `natural`.
+- Reduced CI token permissions and added Docker base-image Dependabot coverage.
+
 ## [1.2.0] - 2026-03
 
 ### Added

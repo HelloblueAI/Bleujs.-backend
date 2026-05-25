@@ -34,6 +34,9 @@ if (!existsSync(logDirectory)) {
   mkdirSync(logDirectory, { recursive: true });
 }
 
+const maxLogBytes = Number(process.env.LOG_MAX_BYTES) || 5 * 1024 * 1024;
+const maxLogFiles = Number(process.env.LOG_MAX_FILES) || 5;
+
 const logFormat = winston.format.printf(({ timestamp, level, message }) => {
   return `${timestamp} [${level.toUpperCase()}]: ${message}`;
 });
@@ -46,6 +49,8 @@ export function createLogger(moduleName) {
       new winston.transports.Console(),
       new winston.transports.File({
         filename: join(logDirectory, "app.log"),
+        maxsize: maxLogBytes,
+        maxFiles: maxLogFiles,
       }),
     ],
   });
@@ -56,3 +61,5 @@ export function createLogger(moduleName) {
 
   return logger.child({ module: moduleName });
 }
+
+export default createLogger("app");

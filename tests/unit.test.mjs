@@ -4,13 +4,37 @@
  * Run: npm run test:unit
  */
 
-import { describe, test, expect, beforeAll } from '@jest/globals';
+import { describe, test, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
 
 // Import the handler
 let handler;
+const originalApiEnv = {
+  BLEU_API_KEY: process.env.BLEU_API_KEY,
+  BLEU_API_KEYS: process.env.BLEU_API_KEYS,
+  API_KEY: process.env.API_KEY,
+  API_KEYS: process.env.API_KEYS,
+};
+
 beforeAll(async () => {
   const base = await import('../index.mjs');
   handler = base.default?.fetch ?? base.fetch;
+});
+
+beforeEach(() => {
+  delete process.env.BLEU_API_KEY;
+  delete process.env.BLEU_API_KEYS;
+  delete process.env.API_KEY;
+  delete process.env.API_KEYS;
+});
+
+afterAll(() => {
+  for (const [key, value] of Object.entries(originalApiEnv)) {
+    if (value == null) {
+      delete process.env[key];
+    } else {
+      process.env[key] = value;
+    }
+  }
 });
 
 describe('API Handler - Health Endpoints', () => {
@@ -103,17 +127,18 @@ describe('API Handler - Chat Endpoint', () => {
     expect(json.choices[0].message.content).toContain('How can I help?');
   });
 
-  test('POST /api/v1/chat with invalid JSON returns 200 with default', async () => {
+  test('POST /api/v1/chat with invalid JSON returns 400', async () => {
     const req = new Request('http://localhost/api/v1/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: 'invalid json'
     });
     const res = await handler(req, {}, {});
-    
-    expect(res.status).toBe(200);
+
+    expect(res.status).toBe(400);
     const json = await res.json();
-    expect(json.choices).toBeDefined();
+    expect(json.success).toBe(false);
+    expect(json.code).toBe('INVALID_JSON');
   });
 
   test('POST /api/v1/chat echoes user message in response', async () => {
@@ -272,6 +297,34 @@ describe('API Handler - Embed Endpoint', () => {
     expect(json.usage.prompt_tokens).toBeDefined();
     expect(json.usage.total_tokens).toBeDefined();
   });
+
+  test('POST /api/v1/embed rejects too many inputs', async () => {
+    const body = { input: Array.from({ length: 129 }, (_, i) => `text-${i}`) };
+    const req = new Request('http://localhost/api/v1/embed', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const res = await handler(req, {}, {});
+    const json = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(json.code).toBe('TOO_MANY_INPUTS');
+  });
+
+  test('POST /api/v1/embed rejects overly long input text', async () => {
+    const body = { input: ['a'.repeat(8193)] };
+    const req = new Request('http://localhost/api/v1/embed', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+    const res = await handler(req, {}, {});
+    const json = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(json.code).toBe('INPUT_TOO_LONG');
+  });
 });
 
 describe('API Handler - Error Handling', () => {
@@ -298,6 +351,29 @@ describe('API Handler - Error Handling', () => {
     const res = await handler(req, {}, {});
     
     expect(res.headers.get('Content-Type')).toBeDefined();
+  });
+
+  test('API routes require an API key when configured', async () => {
+    process.env.BLEU_API_KEY = 'expected-key';
+    const req = new Request('http://localhost/api/v1/models', { method: 'GET' });
+    const res = await handler(req, {}, {});
+    const json = await res.json();
+
+    expect(res.status).toBe(401);
+    expect(json.code).toBe('UNAUTHORIZED');
+  });
+
+  test('API routes accept a configured API key', async () => {
+    process.env.BLEU_API_KEY = 'expected-key';
+    const req = new Request('http://localhost/api/v1/models', {
+      method: 'GET',
+      headers: { 'X-API-Key': 'expected-key' }
+    });
+    const res = await handler(req, {}, {});
+    const json = await res.json();
+
+    expect(res.status).toBe(200);
+    expect(Array.isArray(json.data)).toBe(true);
   });
 });
 

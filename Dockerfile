@@ -46,7 +46,9 @@ ENV PYTHONUNBUFFERED=1 \
 COPY requirements.txt ./
 COPY xgboost_predict.py ./
 COPY predict_api.py ./
-COPY models/ ./models/
+# Models are mounted or populated by deploy pipelines; keep the image buildable
+# even when large binary artifacts are not present in the git checkout.
+RUN mkdir -p ./models/
 
 # Install dependencies and set permissions in a single layer
 RUN pip install --no-cache-dir --upgrade pip==23.3.1 && \

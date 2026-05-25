@@ -51,12 +51,27 @@ logger = logging.getLogger("xgboost_inference")
 
 # Define paths with proper fallbacks
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_DIR = os.environ.get("MODEL_DIR", os.path.join(BASE_DIR, "models"))
-MODEL_PATH = os.environ.get(
-    "MODEL_PATH", os.path.join(MODEL_DIR, "xgboost_model_latest.pkl")
+MODEL_DIR = os.path.realpath(os.environ.get("MODEL_DIR", os.path.join(BASE_DIR, "models")))
+
+
+def _resolve_path(path: str) -> str:
+    """Resolve relative artifact paths from the repo/app root."""
+    return os.path.realpath(path if os.path.isabs(path) else os.path.join(BASE_DIR, path))
+
+
+def _trusted_artifact_path(path: str) -> str:
+    """Only load pickle/joblib artifacts from the trusted model directory."""
+    resolved = _resolve_path(path)
+    if os.path.commonpath([resolved, MODEL_DIR]) != MODEL_DIR:
+        raise ValueError(f"Refusing to load artifact outside MODEL_DIR: {resolved}")
+    return resolved
+
+
+MODEL_PATH = _trusted_artifact_path(
+    os.environ.get("MODEL_PATH", os.path.join(MODEL_DIR, "xgboost_model_latest.pkl"))
 )
-SCALER_PATH = os.environ.get(
-    "SCALER_PATH", os.path.join(MODEL_DIR, "scaler_latest.pkl")
+SCALER_PATH = _trusted_artifact_path(
+    os.environ.get("SCALER_PATH", os.path.join(MODEL_DIR, "scaler_latest.pkl"))
 )
 
 # Create a lock for thread-safe model loading

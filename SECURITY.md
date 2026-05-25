@@ -17,10 +17,23 @@ We will acknowledge and work on the report and coordinate disclosure.
 ## Production checklist
 
 - Set `NODE_ENV=production`.
+- Set `BLEU_API_KEYS` (comma-separated) for any exposed `/api/*` Node routes.
 - Configure CORS to allow only your front-end origin(s) (do not use `*` in production).
 - Use HTTPS and secure cookies where applicable.
 - Keep dependencies updated; run `npm audit` and fix high/critical issues.
 - Do not log secrets or full request bodies in production.
+- Treat ML model and scaler files as trusted binaries. Pickle/joblib artifacts can
+  execute code when loaded, so keep `MODEL_DIR` read-only and load
+  `MODEL_PATH`/`SCALER_PATH` only from that directory.
+- Keep local Docker Compose services bound to localhost unless they are behind an
+  authenticated gateway. The optional MongoDB profile should not publish port
+  `27017` to shared networks.
+
+## Supported versions
+
+Security fixes are applied to the default branch and the latest released backend
+version. Older branches are not supported unless maintainers explicitly mark
+them as active.
 
 ## Main repo
 

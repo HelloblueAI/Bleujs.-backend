@@ -7,8 +7,21 @@
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key",
 };
+
+function getProcessEnvValue(name) {
+  return typeof process !== "undefined" ? process.env?.[name] : undefined;
+}
+
+function getNumericEnvValue(name, fallback) {
+  const value = Number(getProcessEnvValue(name));
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+const MAX_JSON_BODY_BYTES = getNumericEnvValue("MAX_JSON_BODY_BYTES", 1024 * 1024);
+const MAX_EMBED_INPUTS = getNumericEnvValue("MAX_EMBED_INPUTS", 128);
+const MAX_EMBED_TEXT_CHARS = getNumericEnvValue("MAX_EMBED_TEXT_CHARS", 8192);
 
 const DEFAULT_MODELS = [
   { id: "bleu-1", object: "model" },
@@ -37,17 +50,83 @@ function textResponse(text, status = 200) {
   });
 }
 
+class ApiError extends Error {
+  constructor(status, code, message) {
+    super(message);
+    this.status = status;
+    this.code = code;
+  }
+}
+
+function errorResponse(error, fallbackStatus = 500) {
+  const status = Number(error?.status) || fallbackStatus;
+  const code = error?.code || (status === 500 ? "INTERNAL_ERROR" : "BAD_REQUEST");
+  const message = status === 500 ? "Internal server error" : error?.message || "Bad request";
+
+  return jsonResponse(
+    {
+      success: false,
+      error: message,
+      code,
+    },
+    status
+  );
+}
+
+function getConfiguredApiKeys(env = {}) {
+  const raw =
+    env.BLEU_API_KEYS ??
+    env.BLEU_API_KEY ??
+    env.API_KEYS ??
+    env.API_KEY ??
+    getProcessEnvValue("BLEU_API_KEYS") ??
+    getProcessEnvValue("BLEU_API_KEY");
+
+  return String(raw || "")
+    .split(",")
+    .map((key) => key.trim())
+    .filter(Boolean);
+}
+
+function authorizeRequest(request, env) {
+  const configuredKeys = getConfiguredApiKeys(env);
+  if (configuredKeys.length === 0) {
+    return;
+  }
+
+  const auth = request.headers.get("Authorization") || "";
+  const bearer = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
+  const apiKey = request.headers.get("X-API-Key") || bearer;
+  if (!apiKey || !configuredKeys.includes(apiKey)) {
+    throw new ApiError(401, "UNAUTHORIZED", "Unauthorized");
+  }
+}
+
 async function parseJson(request) {
+  const contentLength = Number(request.headers.get("content-length"));
+  if (Number.isFinite(contentLength) && contentLength > MAX_JSON_BODY_BYTES) {
+    throw new ApiError(413, "REQUEST_TOO_LARGE", "Request body too large");
+  }
+
+  const text = await request.text();
+  if (!text.trim()) {
+    return {};
+  }
+
+  if (new TextEncoder().encode(text).length > MAX_JSON_BODY_BYTES) {
+    throw new ApiError(413, "REQUEST_TOO_LARGE", "Request body too large");
+  }
+
   try {
-    const body = await request.json();
+    const body = JSON.parse(text);
     return body != null && typeof body === "object" && !Array.isArray(body) ? body : {};
   } catch {
-    return {};
+    throw new ApiError(400, "INVALID_JSON", "Invalid JSON request body");
   }
 }
 
 export default {
-  async fetch(request, _env, _ctx) {
+  async fetch(request, env = {}, _ctx) {
     const url = new URL(request.url);
     const path = url.pathname;
     const method = request.method;
@@ -57,6 +136,10 @@ export default {
     }
 
     try {
+      if (path.startsWith("/api/")) {
+        authorizeRequest(request, env);
+      }
+
       // Root: keep existing body for smoke test
       if (method === "GET" && (path === "/" || path === "")) {
         return textResponse("Bleu.js Quantum-Enhanced AI Platform - Backend Ready");
@@ -105,8 +188,22 @@ export default {
       if (method === "POST" && path === "/api/v1/embed") {
         const body = await parseJson(request);
         const input = body?.input ?? body?.inputs ?? body?.texts;
-        const raw = Array.isArray(input) ? input : [""];
+        const raw = Array.isArray(input) ? input : [input ?? ""];
+        if (raw.length > MAX_EMBED_INPUTS) {
+          throw new ApiError(
+            400,
+            "TOO_MANY_INPUTS",
+            `Embedding input is limited to ${MAX_EMBED_INPUTS} item(s)`
+          );
+        }
         const texts = raw.map((t) => (typeof t === "string" ? t : String(t ?? "")));
+        if (texts.some((text) => text.length > MAX_EMBED_TEXT_CHARS)) {
+          throw new ApiError(
+            400,
+            "INPUT_TOO_LONG",
+            `Embedding text is limited to ${MAX_EMBED_TEXT_CHARS} character(s)`
+          );
+        }
         const dim = 384;
         const data = texts.map((_, i) => ({
           embedding: Array.from({ length: dim }, (_, j) => (i * 0.001 + j * 0.001) % 0.1),
@@ -124,14 +221,10 @@ export default {
         404
       );
     } catch (err) {
-      return jsonResponse(
-        {
-          success: false,
-          error: err?.message ?? "Internal Server Error",
-          code: "INTERNAL_ERROR",
-        },
-        500
-      );
+      if (err?.status == null) {
+        console.error("api:", err);
+      }
+      return errorResponse(err);
     }
   },
 };

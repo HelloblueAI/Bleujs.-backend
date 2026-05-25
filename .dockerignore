@@ -30,7 +30,7 @@ __pycache__/
 *.log
 logs/
 
-# Data and artifacts not needed in API image (keep models/ for COPY)
+# Data and generated artifacts are mounted or fetched outside the image build
 data/
 .cache/
 
