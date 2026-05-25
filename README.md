@@ -13,9 +13,9 @@
 
 ## What's in this repo
 
-- **API server** — Express app (inference, prediction, rules engine, AI services)
+- **API handler** — Worker-style `fetch` handler plus the local `server.mjs` adapter for development
 - **ML inference** — XGBoost model serving and prediction API (XGBoost 3.x, aligned with [Bleu.js](https://github.com/HelloblueAI/Bleu.js))
-- **Services** — Decision tree, rules engine, Redis, optional MongoDB
+- **Experimental services** — Decision tree, rules engine, Redis, and optional MongoDB helpers are present but not wired into the live handler
 
 ### ML / XGBoost and Hugging Face
 
@@ -56,28 +56,34 @@ npm run dev
 | `npm run typecheck` | TypeScript check        |
 | `npm run test:smoke` | Smoke test (entrypoint responds) |
 | `npm run test:contract` | Checks main repo OpenAPI spec has expected paths (network) |
-| `npm test`          | Typecheck + smoke + contract  |
+| `npm test`          | Typecheck + smoke + API + contract + unit tests |
 
 ## Environment variables
 
 Configure via `.env`. Typical variables (no secrets in the repo):
 
 - `PORT` — Server port
+- `HOST` — Local server bind host (defaults to `127.0.0.1`)
 - `NODE_ENV` — `development` or `production`
+- `BLEU_API_KEY` / `BLEU_API_KEYS` — Optional key or comma-separated keys required for `/api/*` routes
+- `MAX_REQUEST_BODY_BYTES`, `MAX_JSON_BODY_BYTES` — Request body limits for the local server and handler
+- `MAX_EMBED_INPUTS`, `MAX_EMBED_TEXT_CHARS` — Embedding endpoint allocation limits
 - Database/Redis URLs, API keys, and other secrets as required by the app
-- **ML (optional):** `MODEL_DIR`, `MODEL_PATH` — where to find the XGBoost model; `HF_TOKEN`, `HF_REPO_ID` — for scripts that download from the Hub (see [.env.example](.env.example)).
+- **ML (optional):** `MODEL_DIR`, `MODEL_PATH`, `SCALER_PATH` — where to find trusted XGBoost/scaler artifacts; `HF_TOKEN`, `HF_REPO_ID` — for scripts that download from the Hub (see [.env.example](.env.example)).
 
 Do not commit `.env`. Use a secrets manager or env vars in production.
 
 ## Security / production
 
 - **CORS:** The stub in `index.mjs` uses `*` for development. In production, set `Access-Control-Allow-Origin` to your front-end origin(s) only.
+- **Auth:** Set `BLEU_API_KEYS` before exposing `/api/*` routes outside a trusted network.
+- **Model artifacts:** Treat `.pkl`/joblib model and scaler files as trusted binaries. Keep `MODEL_DIR` read-only and avoid loading artifacts from user-writable paths.
 - **Secrets:** Never commit `.env`. Use a secrets manager or platform env vars in production.
 - **Policy:** See [SECURITY.md](SECURITY.md) for reporting vulnerabilities and the production checklist.
 
 ## CI
 
-GitHub Actions run on push/PR to `main`: lint and typecheck (see [.github/workflows/ci.yml](.github/workflows/ci.yml)).
+GitHub Actions run on push/PR to `main`: lint, typecheck, smoke/API/contract/unit tests, and ML script validation (see [.github/workflows/ci.yml](.github/workflows/ci.yml)).
 
 ## Releases
 
@@ -88,7 +94,9 @@ GitHub Actions run on push/PR to `main`: lint and typecheck (see [.github/workfl
 
 Point your deployment (e.g. bleujs.org API) at this repo’s `main` branch. Use environment-based config and a process manager (e.g. PM2) or your platform’s Node runtime.
 
-**If you use the Python XGBoost prediction API:** ensure the model is present before starting (e.g. run `python scripts/download_model_from_hf.py` in your deploy pipeline with `HF_REPO_ID` and `HF_TOKEN` set), or bake `models/xgboost_model_latest.pkl` into your image or volume.
+**If you use the Python XGBoost prediction API:** ensure the model is present before starting (e.g. run `python scripts/download_model_from_hf.py` in your deploy pipeline with `HF_REPO_ID` and `HF_TOKEN` set), or mount `models/xgboost_model_latest.pkl` into the image/container. If you use a scaler, provide `models/scaler_latest.pkl` or set `SCALER_PATH` inside `MODEL_DIR`.
+
+For local container smoke tests, `docker compose up ai-service` builds the Python API image and binds it to `127.0.0.1:${AI_PORT:-8000}`. The optional MongoDB service is behind the `mongo` profile and is not published to the host by default.
 
 ## Contributing
 

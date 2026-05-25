@@ -40,15 +40,29 @@ logging.basicConfig(
 
 # Load the model safely with absolute path; prefer env for deployment flexibility
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_DIR = os.environ.get("MODEL_DIR", os.path.join(BASE_DIR, "models"))
-MODEL_PATH = os.environ.get(
-    "MODEL_PATH",
-    os.path.join(MODEL_DIR, "xgboost_model_latest.pkl"),
+MODEL_DIR = os.path.realpath(os.environ.get("MODEL_DIR", os.path.join(BASE_DIR, "models")))
+
+
+def _resolve_path(path: str) -> str:
+    return os.path.realpath(path if os.path.isabs(path) else os.path.join(BASE_DIR, path))
+
+
+def _trusted_artifact_path(path: str) -> str:
+    resolved = _resolve_path(path)
+    if os.path.commonpath([resolved, MODEL_DIR]) != MODEL_DIR:
+        raise ValueError(f"Refusing to load artifact outside MODEL_DIR: {resolved}")
+    return resolved
+
+
+MODEL_PATH = _trusted_artifact_path(
+    os.environ.get(
+        "MODEL_PATH",
+        os.path.join(MODEL_DIR, "xgboost_model_latest.pkl"),
+    )
 )
 # Fallback paths for backward compatibility
 FALLBACK_PATHS = [
     MODEL_PATH,
-    os.path.join(BASE_DIR, "xgboost_model.pkl"),
     os.path.join(MODEL_DIR, "xgboost_model.pkl"),
 ]
 
@@ -93,8 +107,19 @@ if model is None:
     sys.exit(1)
 
 
+def expected_feature_count(loaded_model: xgb.XGBClassifier) -> int:
+    """Derive model input width instead of assuming a hardcoded feature count."""
+    try:
+        return int(loaded_model.n_features_in_)
+    except AttributeError:
+        return int(loaded_model.get_booster().num_features())
+
+
+EXPECTED_FEATURES = expected_feature_count(model)
+
+
 def preprocess_features(
-    features: Union[List[float], np.ndarray], expected_features: int = 10
+    features: Union[List[float], np.ndarray], expected_features: int = EXPECTED_FEATURES
 ) -> Tuple[Optional[np.ndarray], Optional[str]]:
     """Preprocess input features for prediction."""
     try:
@@ -130,11 +155,6 @@ def predict(
 ) -> Tuple[Optional[float], Optional[str]]:
     """Make predictions using the loaded model."""
     try:
-        # Load model
-        model = load_model()
-        if model is None:
-            return None, "❌ Failed to load model"
-
         # Preprocess features
         processed_features, error = preprocess_features(features)
         if processed_features is None:
