@@ -52,8 +52,7 @@ Bleujs.-backend/
 ├── src/
 │   ├── services/          # Business logic services
 │   │   ├── aiService.mjs
-│   │   ├── rulesEngine.mjs
-│   │   └── decisionTreeService.mjs
+│   │   └── rulesEngine.mjs
 │   ├── ml/                # ML model management
 │   │   └── modelManager.mjs
 │   └── utils/             # Utilities
