@@ -36,7 +36,8 @@ jobs:
       - run: npm ci
       - run: npm test
 
-  # Ensure ML scripts and HF download path work (public repo, no token needed)
+  # ML smoke test. HF download uses HF_TOKEN (Actions secrets are not passed to
+  # dependabot/* branch workflows — compile-only path for those PRs).
   ml-scripts:
     runs-on: ubuntu-latest
     steps:
@@ -44,9 +45,25 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/huggingface
+            models
+          key: hf-model-${{ runner.os }}-pejmantheory-bleu-xgboost-v1
+          restore-keys: |
+            hf-model-${{ runner.os }}-pejmantheory-bleu-xgboost-
       - run: pip install -r requirements-hf.txt
-      - run: python scripts/download_model_from_hf.py
+      - name: Compile ML download script (Dependabot PRs)
+        if: startsWith(github.head_ref, 'dependabot/')
+        run: python -m py_compile scripts/download_model_from_hf.py
+      - name: Download model from Hugging Face Hub
+        if: ${{ !startsWith(github.head_ref, 'dependabot/') }}
+        run: python scripts/download_model_from_hf.py
         env:
           HF_REPO_ID: pejmantheory/bleu-xgboost-classifier
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-      - run: test -f models/xgboost_model_latest.pkl && echo "Model present"
+          HUGGINGFACE_HUB_TOKEN: ${{ secrets.HF_TOKEN }}
+      - name: Verify model artifact
+        if: ${{ !startsWith(github.head_ref, 'dependabot/') }}
+        run: test -f models/xgboost_model_latest.pkl && echo "Model present"
