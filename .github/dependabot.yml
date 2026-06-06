@@ -1,9 +1,8 @@
-# Dependabot configuration for automated dependency updates
-# Keeps npm and pip dependencies up-to-date with security patches
-
+# Dependabot — Bleu.js backend (Node API + Python ML)
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
 version: 2
 updates:
-  # Node.js dependencies (npm)
+  # Node.js (Express API)
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
@@ -20,19 +19,24 @@ updates:
     commit-message:
       prefix: "chore(deps)"
       prefix-development: "chore(deps-dev)"
-    # Group updates to reduce PR noise
     groups:
-      development-dependencies:
-        dependency-type: "development"
-        update-types:
-          - "minor"
-          - "patch"
+      npm-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
       production-dependencies:
+        applies-to: version-updates
         dependency-type: "production"
         update-types:
           - "patch"
+      development-dependencies:
+        applies-to: version-updates
+        dependency-type: "development"
+        update-types:
+          - "patch"
+          - "minor"
 
-  # Python dependencies (pip)
+  # Python (FastAPI / ML scripts)
   - package-ecosystem: "pip"
     directory: "/"
     schedule:
@@ -48,21 +52,37 @@ updates:
       - "HelloblueAI/backend-team"
     commit-message:
       prefix: "chore(deps)"
-    # Group updates to reduce PR noise
     groups:
+      pip-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      api-dependencies:
+        applies-to: version-updates
+        patterns:
+          - "fastapi*"
+          - "uvicorn*"
+        update-types:
+          - "minor"
+          - "patch"
       ml-dependencies:
+        applies-to: version-updates
         patterns:
           - "xgboost*"
           - "scikit-learn*"
           - "pandas*"
           - "numpy*"
+          - "joblib*"
+          - "mlflow*"
+          - "optuna*"
         update-types:
           - "minor"
           - "patch"
-      api-dependencies:
+      python-other:
+        applies-to: version-updates
         patterns:
-          - "fastapi*"
-          - "uvicorn*"
+          - "matplotlib*"
+          - "seaborn*"
         update-types:
           - "minor"
           - "patch"
@@ -81,8 +101,20 @@ updates:
       - "github-actions"
     commit-message:
       prefix: "chore(ci)"
+    groups:
+      actions-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      actions-version:
+        applies-to: version-updates
+        patterns:
+          - "*"
+        update-types:
+          - "patch"
+          - "minor"
 
-  # Docker base images
+  # Docker base image
   - package-ecosystem: "docker"
     directory: "/"
     schedule:
@@ -96,3 +128,12 @@ updates:
       - "docker"
     commit-message:
       prefix: "chore(deps)"
+    groups:
+      docker-security:
+        applies-to: security-updates
+        patterns:
+          - "*"
+      docker-version:
+        applies-to: version-updates
+        patterns:
+          - "*"

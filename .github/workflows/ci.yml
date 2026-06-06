@@ -48,4 +48,5 @@ jobs:
       - run: python scripts/download_model_from_hf.py
         env:
           HF_REPO_ID: pejmantheory/bleu-xgboost-classifier
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
       - run: test -f models/xgboost_model_latest.pkl && echo "Model present"
