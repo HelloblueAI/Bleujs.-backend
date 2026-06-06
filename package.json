@@ -31,7 +31,7 @@
     "dotenv": "^17.4.2",
     "dotenv-safe": "^9.1.0",
     "express": "^5.2.1",
-    "express-rate-limit": "^7.1.5",
+    "express-rate-limit": "^8.5.2",
     "express-validator": "^7.3.2",
     "helmet": "^7.1.0",
     "ioredis": "^5.10.1",
