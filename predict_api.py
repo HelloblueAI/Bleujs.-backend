@@ -15,7 +15,15 @@ logging.basicConfig(
 )
 
 # Initialize FastAPI app
-_PRODUCTION = os.environ.get("NODE_ENV") == "production" or os.environ.get("ENV") == "production"
+def _is_production_env() -> bool:
+    for name in ("NODE_ENV", "ENV"):
+        value = os.environ.get(name, "").lower()
+        if value in ("production", "prod"):
+            return True
+    return False
+
+
+_PRODUCTION = _is_production_env()
 MAX_PREDICT_BODY_BYTES = int(os.environ.get("MAX_PREDICT_BODY_BYTES", 1024 * 1024))
 app = FastAPI(
     title="Bleu.js AI Prediction API",

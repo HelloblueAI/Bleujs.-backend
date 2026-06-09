@@ -227,7 +227,10 @@ async function parseJson(request) {
       "INVALID_JSON",
       "JSON request body must be an object",
     );
-  } catch {
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
     throw new ApiError(400, "INVALID_JSON", "Invalid JSON request body");
   }
 }
