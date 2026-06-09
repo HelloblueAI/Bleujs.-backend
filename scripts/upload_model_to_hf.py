@@ -15,9 +15,9 @@ REPO_ID = os.environ.get("HF_REPO_ID", "helloblueai/bleu-xgboost-classifier")
 
 
 def _load_env() -> None:
-    """Load .env or .env.local from repo root or parent (Bleu.js) if present."""
+    """Load .env from repo root or parent (Bleu.js) if present."""
     base = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    for name in (".env.local", ".env"):
+    for name in (".env",):
         for root in (base, os.path.join(os.path.dirname(base), "Bleu.js")):
             path = os.path.join(root, name)
             if os.path.isfile(path):
