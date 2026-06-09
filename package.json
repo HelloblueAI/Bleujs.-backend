@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.mjs",
   "scripts": {
-    "dev": "dotenv -e .env -- node server.mjs",
+    "dev": "sh -c 'test -f .env || cp .env.example .env' && dotenv -e .env -- node server.mjs",
     "start": "node server.mjs",
     "lint": "eslint . --ext .ts,.mjs",
     "format": "prettier --write .",
