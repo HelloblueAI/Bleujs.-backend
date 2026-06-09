@@ -38,6 +38,14 @@ function isProductionEnv(env = {}) {
   return ["production", "prod"].includes(String(raw || "").toLowerCase());
 }
 
+function stripTrailingSlashes(value) {
+  let result = value;
+  while (result.endsWith("/")) {
+    result = result.slice(0, -1);
+  }
+  return result;
+}
+
 function normalizeOrigin(value) {
   const trimmed = String(value || "").trim();
   if (!trimmed || trimmed === "*") {
@@ -47,7 +55,7 @@ function normalizeOrigin(value) {
   try {
     return new URL(trimmed).origin;
   } catch {
-    return trimmed.replace(/\/+$/, "");
+    return stripTrailingSlashes(trimmed);
   }
 }
 
