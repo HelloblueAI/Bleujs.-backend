@@ -63,22 +63,37 @@ async def require_api_key(
 
 @app.middleware("http")
 async def enforce_predict_body_limit(request: Request, call_next):
-    if request.url.path == "/predict":
-        content_length = request.headers.get("content-length")
-        if content_length:
-            try:
-                if int(content_length) > MAX_PREDICT_BODY_BYTES:
-                    return JSONResponse(
-                        status_code=413,
-                        content={"detail": "Request body too large"},
-                    )
-            except ValueError:
-                return JSONResponse(
-                    status_code=400,
-                    content={"detail": "Invalid Content-Length header"},
-                )
+    if request.url.path != "/predict" or request.method not in ("POST", "PUT", "PATCH"):
+        return await call_next(request)
 
-    return await call_next(request)
+    content_length = request.headers.get("content-length")
+    if content_length is not None:
+        try:
+            if int(content_length) > MAX_PREDICT_BODY_BYTES:
+                return JSONResponse(
+                    status_code=413,
+                    content={"detail": "Request body too large"},
+                )
+        except ValueError:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Invalid Content-Length header"},
+            )
+
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > MAX_PREDICT_BODY_BYTES:
+            return JSONResponse(
+                status_code=413,
+                content={"detail": "Request body too large"},
+            )
+
+    async def receive():
+        return {"type": "http.request", "body": bytes(body), "more_body": False}
+
+    limited_request = Request(request.scope, receive)
+    return await call_next(limited_request)
 
 # Load the model safely; align with xgboost_predict.py paths (XGBoost 3.x)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
