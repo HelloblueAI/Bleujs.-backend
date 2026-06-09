@@ -23,7 +23,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-secrets-manager": "^3.1053.0",
-    "@aws-sdk/credential-providers": "^3.511.0",
+    "@aws-sdk/credential-providers": "^3.1063.0",
     "bcrypt": "^6.0.0",
     "compression": "^1.7.4",
     "compromise": "^14.15.1",
