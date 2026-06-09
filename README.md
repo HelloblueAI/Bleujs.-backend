@@ -47,16 +47,16 @@ npm run dev
 
 ## Scripts
 
-| Script      | Description                |
-|------------|----------------------------|
-| `npm run dev`     | Run local server with dotenv (`node server.mjs`) |
-| `npm start`       | Run local server (`node server.mjs`); set `PORT` to override 4003 |
-| `npm run lint`    | ESLint                    |
-| `npm run format`  | Prettier                   |
-| `npm run typecheck` | TypeScript check        |
-| `npm run test:smoke` | Smoke test (entrypoint responds) |
-| `npm run test:contract` | Checks main repo OpenAPI spec has expected paths (network) |
-| `npm test`          | Typecheck + smoke + API + contract + unit tests |
+| Script                  | Description                                                       |
+| ----------------------- | ----------------------------------------------------------------- |
+| `npm run dev`           | Run local server with dotenv (`node server.mjs`)                  |
+| `npm start`             | Run local server (`node server.mjs`); set `PORT` to override 4003 |
+| `npm run lint`          | ESLint                                                            |
+| `npm run format`        | Prettier                                                          |
+| `npm run typecheck`     | TypeScript check                                                  |
+| `npm run test:smoke`    | Smoke test (entrypoint responds)                                  |
+| `npm run test:contract` | Checks main repo OpenAPI spec has expected paths (network)        |
+| `npm test`              | Typecheck + smoke + API + contract + unit tests                   |
 
 ## Environment variables
 
@@ -66,17 +66,19 @@ Configure via `.env`. Typical variables (no secrets in the repo):
 - `HOST` — Local server bind host (defaults to `127.0.0.1`)
 - `NODE_ENV` — `development` or `production`
 - `BLEU_API_KEY` / `BLEU_API_KEYS` — Optional key or comma-separated keys required for `/api/*` routes
+- `CORS_ORIGINS` — Comma-separated browser origins allowed in production (development defaults to `*`)
 - `MAX_REQUEST_BODY_BYTES`, `MAX_JSON_BODY_BYTES` — Request body limits for the local server and handler
 - `MAX_EMBED_INPUTS`, `MAX_EMBED_TEXT_CHARS` — Embedding endpoint allocation limits
 - Database/Redis URLs, API keys, and other secrets as required by the app
-- **ML (optional):** `MODEL_DIR`, `MODEL_PATH`, `SCALER_PATH` — where to find trusted XGBoost/scaler artifacts; `HF_TOKEN`, `HF_REPO_ID` — for scripts that download from the Hub (see [.env.example](.env.example)).
+- **ML (optional):** `PREDICT_API_KEY` / `PREDICT_API_KEYS`, `MAX_PREDICT_BODY_BYTES` — auth and request-size controls for the Python prediction API; `MODEL_DIR`, `MODEL_PATH`, `SCALER_PATH` — where to find trusted XGBoost/scaler artifacts; `HF_TOKEN`, `HF_REPO_ID` — for scripts that download from the Hub (see [.env.example](.env.example)).
 
 Do not commit `.env`. Use a secrets manager or env vars in production.
 
 ## Security / production
 
-- **CORS:** The stub in `index.mjs` uses `*` for development. In production, set `Access-Control-Allow-Origin` to your front-end origin(s) only.
-- **Auth:** Set `BLEU_API_KEYS` before exposing `/api/*` routes outside a trusted network.
+- **CORS:** The stub in `index.mjs` uses `*` for development. In production, set `CORS_ORIGINS` to your front-end origin(s) only.
+- **Auth:** Set `BLEU_API_KEYS` before exposing `/api/*` routes outside a trusted network. Production API routes fail closed when no key is configured.
+- **ML auth:** Set `PREDICT_API_KEYS` (or reuse `BLEU_API_KEYS`) before exposing `/predict`; production prediction requests fail closed when no key is configured.
 - **Model artifacts:** Treat `.pkl`/joblib model and scaler files as trusted binaries. Keep `MODEL_DIR` read-only and avoid loading artifacts from user-writable paths.
 - **Secrets:** Never commit `.env`. Use a secrets manager or platform env vars in production.
 - **Policy:** See [SECURITY.md](SECURITY.md) for reporting vulnerabilities and the production checklist.

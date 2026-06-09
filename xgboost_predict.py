@@ -129,14 +129,13 @@ def preprocess_features(
         if features_array.ndim != 1:
             return None, "❌ Input must be a one-dimensional list of numbers."
 
-        # Auto-adjust features to match expected size
+        # Reject feature count mismatches instead of silently changing the input.
         if features_array.shape[0] < expected_features:
-            padding_size = expected_features - features_array.shape[0]
-            if padding_size > 0:  # Ensure positive padding size
-                features_array = np.pad(features_array, (0, padding_size), "constant")
-                logging.warning(
-                    f"⚠️ Input features padded to {expected_features} dimensions."
-                )
+            return (
+                None,
+                f"❌ Too few features: expected {expected_features}, "
+                f"got {features_array.shape[0]}",
+            )
 
         elif features_array.shape[0] > expected_features:
             return (

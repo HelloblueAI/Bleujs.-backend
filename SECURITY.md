@@ -18,7 +18,11 @@ We will acknowledge and work on the report and coordinate disclosure.
 
 - Set `NODE_ENV=production`.
 - Set `BLEU_API_KEYS` (comma-separated) for any exposed `/api/*` Node routes.
-- Configure CORS to allow only your front-end origin(s) (do not use `*` in production).
+  Production `/api/*` routes fail closed when no key is configured.
+- Configure `CORS_ORIGINS` to allow only your front-end origin(s) (do not use `*`
+  in production).
+- Set `PREDICT_API_KEYS` (or reuse `BLEU_API_KEYS`) before exposing the Python
+  `/predict` ML service. It fails closed in production when no key is configured.
 - Use HTTPS and secure cookies where applicable.
 - Keep dependencies updated; run `npm audit` and fix high/critical issues.
 - Do not log secrets or full request bodies in production.

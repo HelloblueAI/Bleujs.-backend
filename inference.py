@@ -250,20 +250,14 @@ def preprocess_features(
                 f"got shape {features_array.shape}",
             )
 
-        # Handle feature count mismatch
+        # Reject feature count mismatches instead of silently changing the input.
         expected_features = MODEL_CACHE.get("feature_count")
         if expected_features is not None:
             if features_array.shape[0] < expected_features:
-                # Auto-pad with zeros if needed
-                features_array = np.pad(
-                    features_array,
-                    (0, expected_features - features_array.shape[0]),
-                    "constant",
-                    constant_values=0,
-                )
-                logger.warning(
-                    f"⚠️ Input features were padded from {len(features)} "
-                    f"to {expected_features} dimensions"
+                return (
+                    None,
+                    f"Too few features: expected {expected_features}, "
+                    f"got {features_array.shape[0]}",
                 )
             elif features_array.shape[0] > expected_features:
                 return (
