@@ -4,14 +4,28 @@
  * to match the OpenAPI contract (Bleu.js docs/api/openapi.yaml).
  */
 
-const CORS_HEADERS = {
-  "Access-Control-Allow-Origin": "*",
+const BASE_CORS_HEADERS = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, X-API-Key",
 };
 
+const DEV_CORS_HEADERS = {
+  ...BASE_CORS_HEADERS,
+  "Access-Control-Allow-Origin": "*",
+};
+
 function getProcessEnvValue(name) {
   return typeof process !== "undefined" ? process.env?.[name] : undefined;
+}
+
+function getEnvValue(env = {}, names = []) {
+  for (const name of names) {
+    const value = env?.[name] ?? getProcessEnvValue(name);
+    if (value != null && String(value).trim() !== "") {
+      return value;
+    }
+  }
+  return undefined;
 }
 
 function getNumericEnvValue(name, fallback) {
@@ -19,7 +33,72 @@ function getNumericEnvValue(name, fallback) {
   return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
-const MAX_JSON_BODY_BYTES = getNumericEnvValue("MAX_JSON_BODY_BYTES", 1024 * 1024);
+function isProductionEnv(env = {}) {
+  const raw = getEnvValue(env, ["NODE_ENV", "ENV"]);
+  return ["production", "prod"].includes(String(raw || "").toLowerCase());
+}
+
+function stripTrailingSlashes(value) {
+  let result = value;
+  while (result.endsWith("/")) {
+    result = result.slice(0, -1);
+  }
+  return result;
+}
+
+function normalizeOrigin(value) {
+  const trimmed = String(value || "").trim();
+  if (!trimmed || trimmed === "*") {
+    return trimmed;
+  }
+
+  try {
+    return new URL(trimmed).origin;
+  } catch {
+    return stripTrailingSlashes(trimmed);
+  }
+}
+
+function getAllowedCorsOrigins(env = {}) {
+  const raw = getEnvValue(env, [
+    "CORS_ORIGINS",
+    "ALLOWED_ORIGINS",
+    "PUBLIC_URL",
+    "FRONTEND_URL",
+  ]);
+  return String(raw || "")
+    .split(",")
+    .map(normalizeOrigin)
+    .filter(Boolean);
+}
+
+function getCorsHeaders(request, env = {}) {
+  const production = isProductionEnv(env);
+  const allowedOrigins = getAllowedCorsOrigins(env);
+  const origin = normalizeOrigin(request?.headers?.get?.("Origin"));
+
+  if (
+    !production &&
+    (allowedOrigins.length === 0 || allowedOrigins.includes("*"))
+  ) {
+    return DEV_CORS_HEADERS;
+  }
+
+  if (origin && allowedOrigins.includes(origin)) {
+    return {
+      ...BASE_CORS_HEADERS,
+      "Access-Control-Allow-Origin": origin,
+      Vary: "Origin",
+    };
+  }
+
+  return BASE_CORS_HEADERS;
+}
+
+const MAX_JSON_BODY_BYTES = getNumericEnvValue(
+  "MAX_JSON_BODY_BYTES",
+  1024 * 1024,
+);
 const MAX_EMBED_INPUTS = getNumericEnvValue("MAX_EMBED_INPUTS", 128);
 const MAX_EMBED_TEXT_CHARS = getNumericEnvValue("MAX_EMBED_TEXT_CHARS", 8192);
 
@@ -36,17 +115,22 @@ const DEFAULT_MODELS = [
   { id: "bleu-default", object: "model" },
 ];
 
-function jsonResponse(body, status = 200, headers = {}) {
+function jsonResponse(
+  body,
+  status = 200,
+  headers = {},
+  corsHeaders = DEV_CORS_HEADERS,
+) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json", ...CORS_HEADERS, ...headers },
+    headers: { "Content-Type": "application/json", ...corsHeaders, ...headers },
   });
 }
 
-function textResponse(text, status = 200) {
+function textResponse(text, status = 200, corsHeaders = DEV_CORS_HEADERS) {
   return new Response(text, {
     status,
-    headers: { "Content-Type": "text/plain", ...CORS_HEADERS },
+    headers: { "Content-Type": "text/plain", ...corsHeaders },
   });
 }
 
@@ -58,10 +142,16 @@ class ApiError extends Error {
   }
 }
 
-function errorResponse(error, fallbackStatus = 500) {
+function errorResponse(
+  error,
+  fallbackStatus = 500,
+  corsHeaders = DEV_CORS_HEADERS,
+) {
   const status = Number(error?.status) || fallbackStatus;
-  const code = error?.code || (status === 500 ? "INTERNAL_ERROR" : "BAD_REQUEST");
-  const message = status === 500 ? "Internal server error" : error?.message || "Bad request";
+  const code =
+    error?.code || (status === 500 ? "INTERNAL_ERROR" : "BAD_REQUEST");
+  const message =
+    status === 500 ? "Internal server error" : error?.message || "Bad request";
 
   return jsonResponse(
     {
@@ -69,18 +159,19 @@ function errorResponse(error, fallbackStatus = 500) {
       error: message,
       code,
     },
-    status
+    status,
+    {},
+    corsHeaders,
   );
 }
 
 function getConfiguredApiKeys(env = {}) {
-  const raw =
-    env.BLEU_API_KEYS ??
-    env.BLEU_API_KEY ??
-    env.API_KEYS ??
-    env.API_KEY ??
-    getProcessEnvValue("BLEU_API_KEYS") ??
-    getProcessEnvValue("BLEU_API_KEY");
+  const raw = getEnvValue(env, [
+    "BLEU_API_KEYS",
+    "BLEU_API_KEY",
+    "API_KEYS",
+    "API_KEY",
+  ]);
 
   return String(raw || "")
     .split(",")
@@ -91,11 +182,20 @@ function getConfiguredApiKeys(env = {}) {
 function authorizeRequest(request, env) {
   const configuredKeys = getConfiguredApiKeys(env);
   if (configuredKeys.length === 0) {
+    if (isProductionEnv(env)) {
+      throw new ApiError(
+        503,
+        "AUTH_NOT_CONFIGURED",
+        "API authentication is not configured",
+      );
+    }
     return;
   }
 
   const auth = request.headers.get("Authorization") || "";
-  const bearer = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
+  const bearer = auth.toLowerCase().startsWith("bearer ")
+    ? auth.slice(7).trim()
+    : "";
   const apiKey = request.headers.get("X-API-Key") || bearer;
   if (!apiKey || !configuredKeys.includes(apiKey)) {
     throw new ApiError(401, "UNAUTHORIZED", "Unauthorized");
@@ -119,8 +219,18 @@ async function parseJson(request) {
 
   try {
     const body = JSON.parse(text);
-    return body != null && typeof body === "object" && !Array.isArray(body) ? body : {};
-  } catch {
+    if (body != null && typeof body === "object" && !Array.isArray(body)) {
+      return body;
+    }
+    throw new ApiError(
+      400,
+      "INVALID_JSON",
+      "JSON request body must be an object",
+    );
+  } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
     throw new ApiError(400, "INVALID_JSON", "Invalid JSON request body");
   }
 }
@@ -130,9 +240,10 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
     const method = request.method;
+    const corsHeaders = getCorsHeaders(request, env);
 
     if (method === "OPTIONS") {
-      return new Response(null, { status: 204, headers: CORS_HEADERS });
+      return new Response(null, { status: 204, headers: corsHeaders });
     }
 
     try {
@@ -142,31 +253,49 @@ export default {
 
       // Root: keep existing body for smoke test
       if (method === "GET" && (path === "/" || path === "")) {
-        return textResponse("Bleu.js Quantum-Enhanced AI Platform - Backend Ready");
+        return textResponse(
+          "Bleu.js Quantum-Enhanced AI Platform - Backend Ready",
+          200,
+          corsHeaders,
+        );
       }
 
       if (method === "GET" && path === "/health") {
-        return jsonResponse({ status: "healthy", version: "1.0" });
+        return jsonResponse(
+          { status: "healthy", version: "1.0" },
+          200,
+          {},
+          corsHeaders,
+        );
       }
 
       if (method === "GET" && path === "/api/v1/models") {
-        return jsonResponse({ data: DEFAULT_MODELS });
+        return jsonResponse({ data: DEFAULT_MODELS }, 200, {}, corsHeaders);
       }
 
       if (method === "POST" && path === "/api/v1/chat") {
         const body = await parseJson(request);
         const rawMessages = body?.messages;
         const messages = Array.isArray(rawMessages) ? rawMessages : [];
-        const lastUser = messages.filter((m) => m != null && m?.role === "user").pop();
+        const lastUser = messages
+          .filter((m) => m != null && m?.role === "user")
+          .pop();
         const userText =
-          lastUser != null && typeof lastUser.content === "string" ? lastUser.content : "Hello!";
+          lastUser != null && typeof lastUser.content === "string"
+            ? lastUser.content
+            : "Hello!";
         const content =
           typeof userText === "string" && userText.length > 0
             ? `You said: "${userText.slice(0, 200)}". Hello! How can I help?`
             : "Hello! How can I help?";
-        return jsonResponse({
-          choices: [{ message: { role: "assistant", content } }],
-        });
+        return jsonResponse(
+          {
+            choices: [{ message: { role: "assistant", content } }],
+          },
+          200,
+          {},
+          corsHeaders,
+        );
       }
 
       if (method === "POST" && path === "/api/v1/generate") {
@@ -176,13 +305,18 @@ export default {
           prompt.length > 0
             ? `Generated response to: "${prompt.slice(0, 100)}".`
             : "Generated response.";
-        return jsonResponse({
-          text,
-          id: "gen-" + String(Date.now()),
-          model: typeof body?.model === "string" ? body.model : "bleu-1",
-          usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
-          finish_reason: "stop",
-        });
+        return jsonResponse(
+          {
+            text,
+            id: "gen-" + String(Date.now()),
+            model: typeof body?.model === "string" ? body.model : "bleu-1",
+            usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+            finish_reason: "stop",
+          },
+          200,
+          {},
+          corsHeaders,
+        );
       }
 
       if (method === "POST" && path === "/api/v1/embed") {
@@ -193,38 +327,50 @@ export default {
           throw new ApiError(
             400,
             "TOO_MANY_INPUTS",
-            `Embedding input is limited to ${MAX_EMBED_INPUTS} item(s)`
+            `Embedding input is limited to ${MAX_EMBED_INPUTS} item(s)`,
           );
         }
-        const texts = raw.map((t) => (typeof t === "string" ? t : String(t ?? "")));
+        const texts = raw.map((t) =>
+          typeof t === "string" ? t : String(t ?? ""),
+        );
         if (texts.some((text) => text.length > MAX_EMBED_TEXT_CHARS)) {
           throw new ApiError(
             400,
             "INPUT_TOO_LONG",
-            `Embedding text is limited to ${MAX_EMBED_TEXT_CHARS} character(s)`
+            `Embedding text is limited to ${MAX_EMBED_TEXT_CHARS} character(s)`,
           );
         }
         const dim = 384;
         const data = texts.map((_, i) => ({
-          embedding: Array.from({ length: dim }, (_, j) => (i * 0.001 + j * 0.001) % 0.1),
+          embedding: Array.from(
+            { length: dim },
+            (_, j) => (i * 0.001 + j * 0.001) % 0.1,
+          ),
           index: i,
         }));
-        return jsonResponse({
-          data,
-          model: typeof body?.model === "string" ? body.model : "bleu-embed",
-          usage: { prompt_tokens: 0, total_tokens: 0 },
-        });
+        return jsonResponse(
+          {
+            data,
+            model: typeof body?.model === "string" ? body.model : "bleu-embed",
+            usage: { prompt_tokens: 0, total_tokens: 0 },
+          },
+          200,
+          {},
+          corsHeaders,
+        );
       }
 
       return jsonResponse(
         { success: false, error: "Not Found", code: "NOT_FOUND" },
-        404
+        404,
+        {},
+        corsHeaders,
       );
     } catch (err) {
       if (err?.status == null) {
         console.error("api:", err);
       }
-      return errorResponse(err);
+      return errorResponse(err, 500, corsHeaders);
     }
   },
 };

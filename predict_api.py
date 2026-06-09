@@ -1,11 +1,13 @@
 import logging
 import os
+from hmac import compare_digest
 from typing import List
 
 import joblib
 import numpy as np
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
 
 # Logging setup
 logging.basicConfig(
@@ -13,7 +15,16 @@ logging.basicConfig(
 )
 
 # Initialize FastAPI app
-_PRODUCTION = os.environ.get("NODE_ENV") == "production" or os.environ.get("ENV") == "production"
+def _is_production_env() -> bool:
+    for name in ("NODE_ENV", "ENV"):
+        value = os.environ.get(name, "").lower()
+        if value in ("production", "prod"):
+            return True
+    return False
+
+
+_PRODUCTION = _is_production_env()
+MAX_PREDICT_BODY_BYTES = int(os.environ.get("MAX_PREDICT_BODY_BYTES", 1024 * 1024))
 app = FastAPI(
     title="Bleu.js AI Prediction API",
     version="1.0",
@@ -21,6 +32,76 @@ app = FastAPI(
     redoc_url=None if _PRODUCTION else "/redoc",
     openapi_url=None if _PRODUCTION else "/openapi.json",
 )
+
+
+def _configured_api_keys() -> List[str]:
+    raw = (
+        os.environ.get("PREDICT_API_KEYS")
+        or os.environ.get("PREDICT_API_KEY")
+        or os.environ.get("BLEU_API_KEYS")
+        or os.environ.get("BLEU_API_KEY")
+        or ""
+    )
+    return [key.strip() for key in raw.split(",") if key.strip()]
+
+
+def _bearer_token(authorization: str | None) -> str:
+    if not authorization:
+        return ""
+    scheme, _, token = authorization.partition(" ")
+    return token.strip() if scheme.lower() == "bearer" else ""
+
+
+async def require_api_key(
+    authorization: str | None = Header(default=None),
+    x_api_key: str | None = Header(default=None),
+) -> None:
+    configured_keys = _configured_api_keys()
+    if not configured_keys:
+        if _PRODUCTION:
+            raise HTTPException(
+                status_code=503, detail="API authentication is not configured"
+            )
+        return
+
+    supplied_key = x_api_key or _bearer_token(authorization)
+    if not supplied_key or not any(compare_digest(supplied_key, key) for key in configured_keys):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+
+@app.middleware("http")
+async def enforce_predict_body_limit(request: Request, call_next):
+    if request.url.path != "/predict" or request.method not in ("POST", "PUT", "PATCH"):
+        return await call_next(request)
+
+    content_length = request.headers.get("content-length")
+    if content_length is not None:
+        try:
+            if int(content_length) > MAX_PREDICT_BODY_BYTES:
+                return JSONResponse(
+                    status_code=413,
+                    content={"detail": "Request body too large"},
+                )
+        except ValueError:
+            return JSONResponse(
+                status_code=400,
+                content={"detail": "Invalid Content-Length header"},
+            )
+
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > MAX_PREDICT_BODY_BYTES:
+            return JSONResponse(
+                status_code=413,
+                content={"detail": "Request body too large"},
+            )
+
+    async def receive():
+        return {"type": "http.request", "body": bytes(body), "more_body": False}
+
+    limited_request = Request(request.scope, receive)
+    return await call_next(limited_request)
 
 # Load the model safely; align with xgboost_predict.py paths (XGBoost 3.x)
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -96,10 +177,10 @@ except Exception as e:
 
 # Define input schema for FastAPI
 class PredictionInput(BaseModel):
-    features: List[float]
+    features: List[float] = Field(..., min_length=1, max_length=expected_features)
 
 
-@app.post("/predict")
+@app.post("/predict", dependencies=[Depends(require_api_key)])
 async def predict(input_data: PredictionInput):
     """Make predictions using the XGBoost model."""
     try:
