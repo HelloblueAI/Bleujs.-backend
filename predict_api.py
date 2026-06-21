@@ -1,3 +1,9 @@
+"""Bleu.js XGBoost prediction API (production ML path).
+
+Deploy this FastAPI app for POST /predict. Chat, generate, and embed are served
+by bleujs.org (Next.js), not this service.
+"""
+
 import logging
 import os
 from hmac import compare_digest

@@ -12,7 +12,7 @@
 
 ### Overall Health Score: **91.5/100** (A)
 
-The Bleujs.-backend repository is in **excellent operational health** with robust CI/CD, active maintenance, and production-ready code. This backend powers the Bleu.js cloud API and is a critical component of the Bleu.js ecosystem.
+The Bleujs.-backend repository is in **excellent operational health** with robust CI/CD and active maintenance. It provides the **Python `/predict` service** (production ML) and a **Node edge stub** for OpenAPI contract compliance. Production chat/generate/embed are served by **bleujs.org**, not this repo's Node handler.
 
 ### Quick Status: ✅ All Systems Operational
 
@@ -32,13 +32,17 @@ The Bleujs.-backend repository is in **excellent operational health** with robus
 
 ### What is Bleujs.-backend?
 
-This repository contains the **backend API server** that powers the Bleu.js cloud API at [bleujs.org](https://bleujs.org). It implements the API contract for the Python SDK and CLI tools from the main [Bleu.js](https://github.com/HelloblueAI/Bleu.js) repository.
+This repository contains two deployable surfaces:
+
+- **Python FastAPI (`predict_api.py`)** — production **`POST /predict`** (XGBoost inference)
+- **Node handler (`index.mjs`)** — **stub** chat/generate/embed for local dev, CI, and contract tests
+
+**Production AI routes** (`/api/v1/chat`, `/generate`, `/embed`) are served by **[bleujs.org](https://bleujs.org)** (Next.js on Vercel). See [Who serves the API](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/WHO_SERVES_THE_API.md).
 
 **Key Responsibilities:**
-- REST API endpoints (`/api/v1/chat`, `/api/v1/generate`, `/api/v1/embed`)
-- XGBoost model serving and ML inference
-- Rules engine and decision tree services
-- Health monitoring and metrics
+- **Node stub:** OpenAPI-shaped chat, generate, embed (testing and edge only)
+- **Python API:** XGBoost model serving at `POST /predict`
+- **CI:** Contract tests against the main repo `openapi.yaml`
 
 ### Architecture
 

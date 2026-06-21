@@ -4,18 +4,35 @@
 [![Part of Bleu.js](https://img.shields.io/badge/Part%20of-Bleu.js-blue.svg)](https://github.com/HelloblueAI/Bleu.js)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**Part of the [Bleu.js](https://github.com/HelloblueAI/Bleu.js) project.** This repo contains the backend that powers the Bleu.js cloud API; the main repo holds the Python SDK, CLI, docs, and product app. For how both repos fit together and stay in sync, see the main repo: [Repositories and sync](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/REPOSITORIES.md). **Repo name:** This repository is **Bleujs.-backend** (canonical: [github.com/HelloblueAI/Bleujs.-backend](https://github.com/HelloblueAI/Bleujs.-backend)).
+**Part of the [Bleu.js](https://github.com/HelloblueAI/Bleu.js) project.** This repo holds the **edge API stub** (Node) and the **XGBoost prediction service** (Python). The main Bleu.js repo holds the Python SDK, CLI, docs, and product app. For how both repos fit together and stay in sync, see [Repositories and sync](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/REPOSITORIES.md). **Repo name:** **Bleujs.-backend** — [github.com/HelloblueAI/Bleujs.-backend](https://github.com/HelloblueAI/Bleujs.-backend).
+
+## Who serves what in production
+
+| Traffic | Production owner | Role of this repo |
+| --- | --- | --- |
+| `POST /api/v1/chat`, `/generate`, `/embed` | **[bleujs.org](https://bleujs.org)** (Next.js on Vercel, via `api.bleujs.org`) | Stub responses for **local dev, CI, and contract tests** — not production AI |
+| `POST /predict` | **Python FastAPI** (`predict_api.py`) | **Canonical ML inference** — deploy via Docker, Railway, or Elastic Beanstalk |
+| OpenAPI shape + edge compatibility | **Node handler** (`index.mjs`) | **Edge stub + contract compliance** (Cloudflare Worker–style `fetch` handler) |
+
+**In one line:**
+
+- **Chat / generate / embed → bleujs.org**
+- **`/predict` → Python FastAPI**
+- **This repo's Node handler → edge stub + contract compliance**
+
+For the full client vs server split, see the main repo: [Who serves the API](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/WHO_SERVES_THE_API.md).
 
 ### Entrypoint and structure
 
-- **`index.mjs`** exports a fetch handler (Cloudflare Worker style) that implements `/health`, `/api/v1/models`, `/api/v1/chat`, `/api/v1/generate`, and `/api/v1/embed` so that `bleu chat`, `bleu generate`, and `bleu embed` (and the Python SDK) get HTTP 200 and valid JSON. Deploy this handler to your Worker host (e.g. Cloudflare Workers).
-- **`server.mjs`** runs a local HTTP server (default port 4003) that invokes the handler so `npm run dev` / `npm start` serve the API locally and avoid timeouts or 500s when testing with the CLI or SDK.
+- **`index.mjs`** — Cloudflare Worker–style `fetch` handler for `/health`, `/api/v1/models`, `/api/v1/chat`, `/api/v1/generate`, and `/api/v1/embed`. Returns **stub** responses that match the [OpenAPI contract](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/api/openapi.yaml) so `bleu chat`, `bleu generate`, and `bleu embed` (and the Python SDK) can be tested locally or on an edge host. **Production chat/generate/embed are served by bleujs.org, not this handler.**
+- **`server.mjs`** — local HTTP adapter (default port 4003) around `index.mjs` for `npm run dev` / `npm start`.
+- **`predict_api.py`** — FastAPI service for `POST /predict` (XGBoost). This is the **production ML path**; deploy separately from the Node handler (see [Deploy](#deploy)).
 
 ## What's in this repo
 
-- **API handler** — Worker-style `fetch` handler plus the local `server.mjs` adapter for development
-- **ML inference** — XGBoost model serving and prediction API (XGBoost 3.x, aligned with [Bleu.js](https://github.com/HelloblueAI/Bleu.js))
-- **Experimental services** — Rules engine, Redis, and optional MongoDB helpers are present but not wired into the live handler
+- **Node API stub** — `index.mjs` + `server.mjs` for contract-compliant edge/local testing (not production AI)
+- **Python ML inference** — `predict_api.py` and XGBoost artifacts (XGBoost 3.x, aligned with [Bleu.js](https://github.com/HelloblueAI/Bleu.js))
+- **Experimental code** — legacy `src/` services (rules engine, MongoDB helpers) are **not wired** into the live handler; do not treat them as production paths
 
 ### ML / XGBoost and Hugging Face
 
@@ -94,11 +111,33 @@ GitHub Actions run on push/PR to `main`: lint, typecheck, smoke/API/contract/uni
 
 ## Deploy
 
-Point your deployment (e.g. bleujs.org API) at this repo’s `main` branch. Use environment-based config and a process manager (e.g. PM2) or your platform’s Node runtime.
+Deploy **each surface independently** — they are separate processes with different production owners.
 
-**If you use the Python XGBoost prediction API:** ensure the model is present before starting (e.g. run `python scripts/download_model_from_hf.py` in your deploy pipeline with `HF_REPO_ID` and `HF_TOKEN` set), or mount `models/xgboost_model_latest.pkl` into the image/container. If you use a scaler, provide `models/scaler_latest.pkl` or set `SCALER_PATH` inside `MODEL_DIR`.
+### Chat / generate / embed (production)
 
-For local container smoke tests, `docker compose up ai-service` builds the Python API image and binds it to `127.0.0.1:${AI_PORT:-8000}`. The optional MongoDB service is behind the `mongo` profile and is not published to the host by default.
+**Do not deploy this repo's Node handler for production AI.** Live traffic is served by **[bleujs.org](https://bleujs.org)** (Next.js on Vercel). Changes to chat, generate, or embed belong in the bleujs.org codebase.
+
+Use this repo's Node handler only for:
+
+- Local development (`npm run dev`)
+- CI and contract tests (`npm test`)
+- Optional edge hosting of **stub** responses (e.g. Cloudflare Workers)
+
+### `/predict` (production ML)
+
+Deploy the **Python FastAPI** service (`predict_api.py`):
+
+```bash
+# Docker (see Dockerfile — Python-only image)
+docker build -t bleujs-predict .
+docker run -p 8000:8000 -e PREDICT_API_KEYS=your-key bleujs-predict
+```
+
+Before starting, ensure the model is present (e.g. run `python scripts/download_model_from_hf.py` in your pipeline with `HF_REPO_ID` and `HF_TOKEN` set), or mount `models/xgboost_model_latest.pkl` into the container. If you use a scaler, provide `models/scaler_latest.pkl` or set `SCALER_PATH` inside `MODEL_DIR`.
+
+For local smoke tests: `docker compose up ai-service` binds the Python API to `127.0.0.1:${AI_PORT:-8000}`. The optional MongoDB service is behind the `mongo` profile and is not published to the host by default.
+
+See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) for Railway, Elastic Beanstalk, and Docker details.
 
 ## Contributing
 

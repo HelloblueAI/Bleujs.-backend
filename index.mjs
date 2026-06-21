@@ -1,5 +1,10 @@
 /**
  * Bleu.js Backend – API entrypoint (Cloudflare Worker / fetch handler).
+ *
+ * Production: chat / generate / embed are served by bleujs.org (Next.js), NOT this file.
+ * This handler provides stub responses for local dev, CI, and optional edge deployment.
+ * Production ML inference: predict_api.py (POST /predict).
+ *
  * Implements /health, /api/v1/models, /api/v1/chat, /api/v1/generate, /api/v1/embed
  * to match the OpenAPI contract (Bleu.js docs/api/openapi.yaml).
  */

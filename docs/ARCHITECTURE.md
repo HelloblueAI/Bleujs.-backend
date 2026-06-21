@@ -1,8 +1,8 @@
 # Bleujs.-backend Architecture
 
 **Version:** 1.2.0  
-**Last Updated:** May 18, 2026  
-**Status:** Production
+**Last Updated:** June 21, 2026  
+**Status:** Production (Python `/predict`); Node handler is stub + contract compliance
 
 ---
 
@@ -24,13 +24,37 @@
 
 ## Overview
 
-The Bleujs.-backend provides the REST API server that powers the Bleu.js cloud platform. It serves as the backend for the Python SDK and CLI tools from the [main Bleu.js repository](https://github.com/HelloblueAI/Bleu.js).
+Bleujs.-backend is a **two-surface** repository: a Node **edge stub** for OpenAPI contract compliance and a Python **FastAPI** service for XGBoost inference. It supports the [Bleu.js](https://github.com/HelloblueAI/Bleu.js) Python SDK and CLI, but **does not serve production chat, generate, or embed** — those routes live on **bleujs.org** (Next.js on Vercel).
 
-**Key Responsibilities:**
-- REST API endpoints for chat, generation, and embeddings
-- XGBoost model serving and ML inference
-- Rules engine and decision tree services
-- Health monitoring and metrics collection
+### Production service map
+
+| Route(s) | Production owner | Implemented in this repo |
+| --- | --- | --- |
+| `POST /api/v1/chat`, `/generate`, `/embed` | **bleujs.org** | `index.mjs` — **stub only** (local dev, CI, optional edge) |
+| `POST /predict` | **This repo** (Python) | `predict_api.py` — **canonical ML inference** |
+| Contract / OpenAPI compliance | **This repo** (Node) | `index.mjs` — edge stub + contract tests |
+
+**One-line summary:**
+
+- **Chat / generate / embed → bleujs.org**
+- **`/predict` → Python FastAPI**
+- **This repo's Node handler → edge stub + contract compliance**
+
+See the main repo: [Who serves the API](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/WHO_SERVES_THE_API.md).
+
+**What this repo actually ships today:**
+
+- **Node (`index.mjs`, `server.mjs`)** — Cloudflare Worker–style handler with stub chat/generate/embed responses; used for development and contract validation.
+- **Python (`predict_api.py`)** — FastAPI XGBoost prediction API; deployed via Docker, Railway, or Elastic Beanstalk.
+- **`src/` experimental services** — rules engine, AI service, MongoDB helpers — **not wired** to the live handler (legacy / aspirational).
+
+**Historical note:** Diagrams below include planned components (Express, Redis, rules engine, OpenAI). Treat them as **target architecture**, not the current production path.
+
+**Key Responsibilities (by surface):**
+
+- **Node stub:** OpenAPI-shaped `/health`, `/api/v1/models`, `/api/v1/chat`, `/api/v1/generate`, `/api/v1/embed` for testing and edge deployment
+- **Python API:** XGBoost model serving at `POST /predict`
+- **CI:** Contract tests against the main repo `openapi.yaml`
 
 ---
 
