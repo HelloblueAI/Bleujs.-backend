@@ -297,7 +297,7 @@ sequenceDiagram
 graph TB
     subgraph "Railway Platform"
         subgraph "Backend Service"
-            DOCKER[Docker Container<br/>python:3.11-slim]
+            DOCKER[Docker Container<br/>python:3.14-slim]
             APP[FastAPI App<br/>predict_api.py]
             XGB[XGBoost Runtime]
             MODELS[Models Volume<br/>models/]
@@ -426,7 +426,7 @@ graph LR
 
 | Component | Technology | Version | Purpose |
 |-----------|-----------|---------|---------|
-| **Runtime** | Python | 3.11-3.12 | ML runtime |
+| **Runtime** | Python | 3.12+ | ML runtime (NumPy 2.5+ requires ≥3.12) |
 | **ML Framework** | XGBoost | 3.0.2+ | Model inference |
 | **API Framework** | FastAPI | Latest | Python API |
 | **Server** | Uvicorn | Latest | ASGI server |
@@ -627,7 +627,7 @@ graph TB
 
 2. **Docker Security**
    - Non-root user: `bleujs`
-   - Slim base image: `python:3.11-slim-bookworm`
+   - Slim base image: `python:3.14-slim-bookworm` (see root `Dockerfile`)
    - Pinned digest for reproducibility
    - Security upgrades at build time
 
