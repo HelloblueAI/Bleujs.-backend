@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Python SDK issues
+    url: https://github.com/HelloblueAI/Bleu.js/issues/new
+    about: Bugs and features for `pip install bleu-js`, CLI, and main docs
+  - name: Bleu.js documentation
+    url: https://github.com/HelloblueAI/Bleu.js/tree/main/docs
+    about: API contract, install guides, and contributor docs
+  - name: Repositories and sync
+    url: https://github.com/HelloblueAI/Bleu.js/blob/main/docs/REPOSITORIES.md
+    about: How this backend repo relates to the main Bleu.js SDK

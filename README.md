@@ -4,7 +4,7 @@
 [![Part of Bleu.js](https://img.shields.io/badge/Part%20of-Bleu.js-blue.svg)](https://github.com/HelloblueAI/Bleu.js)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-**Part of the [Bleu.js](https://github.com/HelloblueAI/Bleu.js) project.** This repo holds the **edge API stub** (Node) and the **XGBoost prediction service** (Python). The main Bleu.js repo holds the Python SDK, CLI, docs, and product app. For how both repos fit together and stay in sync, see [Repositories and sync](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/REPOSITORIES.md). **Repo name:** **Bleujs.-backend** — [github.com/HelloblueAI/Bleujs.-backend](https://github.com/HelloblueAI/Bleujs.-backend).
+**Part of the [Bleu.js](https://github.com/HelloblueAI/Bleu.js) project.** This repo holds the **edge API stub** (Node) and the **XGBoost prediction service** (Python). The main Bleu.js repo holds the Python SDK, CLI, docs, and product app. For how both repos fit together and stay in sync, see [Repositories and sync](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/REPOSITORIES.md). OSS cleanup status: [OSS cleanup plan](https://github.com/HelloblueAI/Bleu.js/blob/main/docs/OSS_CLEANUP_PLAN.md). **Repo name:** **Bleujs.-backend** — [github.com/HelloblueAI/Bleujs.-backend](https://github.com/HelloblueAI/Bleujs.-backend).
 
 ## Who serves what in production
 

@@ -15,3 +15,6 @@ __pycache__/
 data/
 models/
 *.pkl
+
+# Elastic Beanstalk local backups (keep config.yml for EB CLI)
+.elasticbeanstalk/saved_configs/
