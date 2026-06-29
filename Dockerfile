@@ -1,6 +1,6 @@
 # Use Bookworm slim for newer, security-patched system packages (libexpat, sqlite, etc.)
 # Pin digest for reproducible builds and Trivy scanning
-FROM python:3.14-slim-bookworm@sha256:a70519002c49552ea0a853de47599cf40479b001bd7a624f1112eaf44dcaccc7
+FROM python:3.14-slim-bookworm@sha256:4ff4b92a68355dbdb52584ab3391dff8d371a61d4e063468bfd0130e3189c6d9
 
 # Set working directory
 WORKDIR /app
